@@ -5,14 +5,22 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import Row, case, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.errors import AppError
 from app.db.models import MonitoringSession, Sample
-from app.schemas.sessions import IngestResult, SampleIn
+from app.schemas.sessions import (
+    IngestResult,
+    SampleIn,
+    SampleOut,
+    SessionDetail,
+    SessionOut,
+    Summary,
+)
+from app.schemas.sessions import Thresholds as ThresholdsOut
 from app.services.verdict import Thresholds, evaluate
 
 logger = logging.getLogger(__name__)
@@ -143,4 +151,97 @@ def ingest_samples(
         inserted=inserted,
         duplicates=repeated_in_request + len(unique) - inserted,
         ignored_after_stop=0,
+    )
+
+
+def stop_session(
+    db: Session, session_id: uuid.UUID, samples: Sequence[SampleIn], max_batch: int
+) -> tuple[MonitoringSession, IngestResult]:
+    """Save the final samples and end the session in one transaction (ADR-004).
+
+    Stopping an ended session keeps its original ended_at; its samples follow ADR-010.
+    """
+    session = lock_session(db, session_id)
+    result = ingest_samples(db, session, samples, max_batch)
+    if session.ended_at is None:
+        session.ended_at = max(datetime.now(UTC), session.started_at)
+    db.commit()
+    return session, result
+
+
+# --- summary (computed at read time, never stored) -----------------------------------------
+
+_SUMMARY_COLUMNS = (
+    func.count(Sample.t).label("sample_count"),
+    func.max(Sample.t).label("duration_s"),
+    func.avg(Sample.fps).label("avg_fps"),
+    func.avg(case((Sample.face, 100.0), else_=0.0)).label("face_pct"),
+    func.avg(case((Sample.verdict == "good", 100.0), else_=0.0)).label("good_pct"),
+)
+
+
+def _round(value: float | None) -> float | None:
+    return None if value is None else round(float(value), 1)
+
+
+def _summary(row: Row[tuple[int, int | None, float | None, float | None, float | None]]) -> Summary:
+    count = row.sample_count or 0
+    if count == 0:
+        return Summary(duration_s=None, avg_fps=None, face_pct=None, good_pct=None, sample_count=0)
+    return Summary(
+        duration_s=row.duration_s,
+        avg_fps=_round(row.avg_fps),
+        face_pct=_round(row.face_pct),
+        good_pct=_round(row.good_pct),
+        sample_count=count,
+    )
+
+
+def summary_of(db: Session, session_id: uuid.UUID) -> Summary:
+    row = db.execute(select(*_SUMMARY_COLUMNS).where(Sample.session_id == session_id)).one()
+    return _summary(row)
+
+
+def to_session_out(session: MonitoringSession, summary: Summary) -> SessionOut:
+    return SessionOut(
+        id=session.id,
+        started_at=session.started_at,
+        ended_at=session.ended_at,
+        thresholds=ThresholdsOut(
+            fps_min=session.fps_min,
+            brightness_min=session.brightness_min,
+            brightness_max=session.brightness_max,
+            motion_max=session.motion_max,
+        ),
+        summary=summary,
+    )
+
+
+def list_sessions(db: Session) -> list[SessionOut]:
+    """All sessions, newest first, each with its summary, in one query."""
+    stats = select(Sample.session_id, *_SUMMARY_COLUMNS).group_by(Sample.session_id).subquery()
+    query = (
+        select(
+            MonitoringSession,
+            stats.c.sample_count,
+            stats.c.duration_s,
+            stats.c.avg_fps,
+            stats.c.face_pct,
+            stats.c.good_pct,
+        )
+        .outerjoin(stats, stats.c.session_id == MonitoringSession.id)
+        .order_by(MonitoringSession.started_at.desc(), MonitoringSession.id.desc())
+    )
+    return [to_session_out(row[0], _summary(row)) for row in db.execute(query).all()]
+
+
+def session_detail(db: Session, session_id: uuid.UUID) -> SessionDetail:
+    session = get_session(db, session_id)
+    samples = db.scalars(
+        select(Sample).where(Sample.session_id == session_id).order_by(Sample.t)
+    ).all()
+    out = to_session_out(session, summary_of(db, session_id))
+    return SessionDetail(
+        **out.model_dump(),
+        samples=[SampleOut.model_validate(sample, from_attributes=True) for sample in samples],
     )

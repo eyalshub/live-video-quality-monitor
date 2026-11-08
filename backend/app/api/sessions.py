@@ -2,14 +2,23 @@ import logging
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Body, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.errors import ErrorResponse
 from app.db.models import MonitoringSession
 from app.db.session import get_db
-from app.schemas.sessions import IngestResult, SamplesBatch, SessionCreated, Thresholds
+from app.schemas.sessions import (
+    IngestResult,
+    SamplesBatch,
+    SessionCreated,
+    SessionDetail,
+    SessionOut,
+    StopRequest,
+    StopResponse,
+    Thresholds,
+)
 from app.services import sessions as service
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
@@ -69,3 +78,41 @@ def add_samples(
     db.commit()
     logger.info("samples ingested", extra={"session_id": str(session_id), **result.model_dump()})
     return result
+
+
+@router.post(
+    "/{session_id}/stop",
+    response_model=StopResponse,
+    responses={**NOT_FOUND, **INVALID},
+)
+def stop_session(
+    session_id: uuid.UUID,
+    db: DbSession,
+    settings: AppSettings,
+    body: Annotated[StopRequest | None, Body()] = None,
+) -> StopResponse:
+    """End the session, saving any final samples in the same transaction (ADR-004).
+    Calling it again returns the same ended_at."""
+    samples = body.samples if body else []
+    session, result = service.stop_session(db, session_id, samples, settings.max_samples_per_batch)
+    logger.info("session stopped", extra={"session_id": str(session_id), **result.model_dump()})
+    return StopResponse(
+        session=service.to_session_out(session, service.summary_of(db, session_id)),
+        ingest=result,
+    )
+
+
+@router.get("", response_model=list[SessionOut])
+def list_sessions(db: DbSession) -> list[SessionOut]:
+    """All sessions, newest first, each with its summary."""
+    return service.list_sessions(db)
+
+
+@router.get(
+    "/{session_id}",
+    response_model=SessionDetail,
+    responses={**NOT_FOUND, **INVALID},
+)
+def get_session(session_id: uuid.UUID, db: DbSession) -> SessionDetail:
+    """One session with all its samples (ordered by t) and its summary."""
+    return service.session_detail(db, session_id)

@@ -71,9 +71,45 @@ class SamplesBatch(BaseModel):
     )
 
 
+class StopRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    samples: list[SampleIn] = Field(
+        default_factory=list, description="Final samples, saved in the same transaction (ADR-004)"
+    )
+
+
+class Summary(BaseModel):
+    """Computed by the backend at read time. All fields except sample_count are null when the
+    session has no samples."""
+
+    duration_s: int | None = Field(description="t of the last sample")
+    avg_fps: float | None
+    face_pct: float | None = Field(description="% of seconds with a face")
+    good_pct: float | None = Field(description="% of seconds with verdict good")
+    sample_count: int
+
+
+class SessionOut(BaseModel):
+    id: uuid.UUID
+    started_at: datetime
+    ended_at: datetime | None = Field(description="null while running or if the tab was closed")
+    thresholds: Thresholds
+    summary: Summary
+
+
+class SessionDetail(SessionOut):
+    samples: list[SampleOut] = Field(description="Ordered by t")
+
+
 class IngestResult(BaseModel):
     """What happened to the samples of one request (ADR-010)."""
 
     inserted: int = Field(description="New samples stored")
     duplicates: int = Field(description="Already stored, or repeated in the request; unchanged")
     ignored_after_stop: int = Field(description="New samples for an ended session; not stored")
+
+
+class StopResponse(BaseModel):
+    session: SessionOut
+    ingest: IngestResult
