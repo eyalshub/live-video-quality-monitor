@@ -4,6 +4,8 @@
  * reported together so a misconfigured deploy fails loudly with one clear message.
  */
 
+import type { InsightLimits } from './metrics/insights'
+
 export interface AppConfig {
   /** Backend base URL without a trailing slash. */
   apiBaseUrl: string
@@ -16,7 +18,20 @@ export interface AppConfig {
   apiTimeoutMs: number
   /** Run the face detector on every Nth frame of each second (always on its first frame). */
   faceDetectEveryNFrames: number
+  /**
+   * Extra insights (ADR-013): informational limits, never part of the verdict. Optional as a
+   * group: null when none of the four variables is set (the panel is then off). Setting only some
+   * of them is a configuration error.
+   */
+  insights: InsightLimits | null
 }
+
+const INSIGHT_VARIABLES = [
+  'VITE_SHARPNESS_MIN',
+  'VITE_CLIP_PCT_MAX',
+  'VITE_FACE_MIN_WIDTH_PCT',
+  'VITE_FACE_MAX_OFFSET_PCT',
+] as const
 
 export type RawEnv = Readonly<Record<string, unknown>>
 
@@ -76,6 +91,26 @@ export function parseConfig(env: RawEnv): AppConfig {
     return parsed
   }
 
+  function readInsights(): InsightLimits | null {
+    const isSet = (name: string) => {
+      const value = env[name]
+      return typeof value === 'string' && value.trim() !== ''
+    }
+    const set = INSIGHT_VARIABLES.filter(isSet)
+    if (set.length === 0) return null
+    if (set.length < INSIGHT_VARIABLES.length) {
+      const missing = INSIGHT_VARIABLES.filter((name) => !isSet(name))
+      problems.push(`Set all extra-insight variables or none; missing: ${missing.join(', ')}`)
+      return null
+    }
+    return {
+      sharpnessMin: readInt('VITE_SHARPNESS_MIN', 0, 100_000),
+      clipPctMax: readInt('VITE_CLIP_PCT_MAX', 0, 100),
+      faceMinWidthPct: readInt('VITE_FACE_MIN_WIDTH_PCT', 1, 100),
+      faceMaxOffsetPct: readInt('VITE_FACE_MAX_OFFSET_PCT', 0, 50),
+    }
+  }
+
   const config: AppConfig = {
     apiBaseUrl: readUrl('VITE_API_BASE_URL'),
     sampleBatchIntervalMs: readInt('VITE_SAMPLE_BATCH_INTERVAL_MS', 200, 60_000),
@@ -83,6 +118,7 @@ export function parseConfig(env: RawEnv): AppConfig {
     analysisHeight: readInt('VITE_ANALYSIS_HEIGHT', 16, 1080),
     apiTimeoutMs: readInt('VITE_API_TIMEOUT_MS', 1_000, 300_000),
     faceDetectEveryNFrames: readInt('VITE_FACE_DETECT_EVERY_N_FRAMES', 1, 30),
+    insights: readInsights(),
   }
 
   if (problems.length > 0) throw new ConfigError(problems)

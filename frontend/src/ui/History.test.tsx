@@ -13,6 +13,7 @@ const CONFIG: AppConfig = {
   analysisHeight: 120,
   apiTimeoutMs: 1000,
   faceDetectEveryNFrames: 1,
+  insights: { sharpnessMin: 50, clipPctMax: 5, faceMinWidthPct: 20, faceMaxOffsetPct: 20 },
 }
 const THRESHOLDS = { fps_min: 15, brightness_min: 60, brightness_max: 200, motion_max: 20 }
 const EMPTY_SUMMARY = {

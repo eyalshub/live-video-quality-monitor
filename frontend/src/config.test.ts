@@ -9,6 +9,10 @@ const VALID = {
   VITE_ANALYSIS_HEIGHT: '120',
   VITE_API_TIMEOUT_MS: '70000',
   VITE_FACE_DETECT_EVERY_N_FRAMES: '1',
+  VITE_SHARPNESS_MIN: '50',
+  VITE_CLIP_PCT_MAX: '5',
+  VITE_FACE_MIN_WIDTH_PCT: '20',
+  VITE_FACE_MAX_OFFSET_PCT: '20',
 }
 
 function problemsFor(env: Record<string, unknown>): readonly string[] {
@@ -30,7 +34,25 @@ describe('parseConfig', () => {
       analysisHeight: 120,
       apiTimeoutMs: 70000,
       faceDetectEveryNFrames: 1,
+      insights: { sharpnessMin: 50, clipPctMax: 5, faceMinWidthPct: 20, faceMaxOffsetPct: 20 },
     })
+  })
+
+  it('turns the extra insights off when none of their variables is set', () => {
+    const env: Record<string, string> = { ...VALID }
+    delete env.VITE_SHARPNESS_MIN
+    delete env.VITE_CLIP_PCT_MAX
+    delete env.VITE_FACE_MIN_WIDTH_PCT
+    delete env.VITE_FACE_MAX_OFFSET_PCT
+    expect(parseConfig(env).insights).toBeNull()
+  })
+
+  it('rejects a partial extra-insight configuration', () => {
+    const env: Record<string, string> = { ...VALID }
+    delete env.VITE_CLIP_PCT_MAX
+    expect(problemsFor(env)).toEqual([
+      'Set all extra-insight variables or none; missing: VITE_CLIP_PCT_MAX',
+    ])
   })
 
   it('strips trailing slashes from the API base URL', () => {
@@ -38,10 +60,11 @@ describe('parseConfig', () => {
     expect(config.apiBaseUrl).toBe('https://api.example.com')
   })
 
-  it('reports every missing variable at once', () => {
+  it('reports every missing required variable at once', () => {
     const problems = problemsFor({})
-    expect(problems).toHaveLength(Object.keys(VALID).length)
-    for (const name of Object.keys(VALID)) {
+    const required = Object.keys(VALID).filter((name) => !/SHARPNESS|CLIP|FACE_M/.test(name))
+    expect(problems).toHaveLength(required.length)
+    for (const name of required) {
       expect(problems).toContain(`${name} is missing`)
     }
   })
@@ -62,6 +85,8 @@ describe('parseConfig', () => {
     ['VITE_ANALYSIS_HEIGHT', '-120'],
     ['VITE_API_TIMEOUT_MS', '999999999'],
     ['VITE_FACE_DETECT_EVERY_N_FRAMES', '0'],
+    ['VITE_CLIP_PCT_MAX', '101'],
+    ['VITE_FACE_MAX_OFFSET_PCT', '51'],
   ])('rejects %s=%s', (name, value) => {
     const problems = problemsFor({ ...VALID, [name]: value })
     expect(problems).toHaveLength(1)

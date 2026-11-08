@@ -395,3 +395,53 @@ button:disabled {
   font-size: 1.3rem;
   font-weight: 600;
 }
+
+/* --- extra insights (ADR-013) ---------------------------------------------------------- */
+.insights {
+  margin-top: 1rem;
+  border: 1px dashed var(--muted);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.insights h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.insights ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insight {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  column-gap: 0.5rem;
+  padding: 0.2rem 0;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.insight__title {
+  grid-row: span 2;
+  font-weight: 600;
+}
+
+.insight__value {
+  color: var(--muted);
+}
+
+.insight--ok .insight__status {
+  color: var(--ok);
+}
+
+.insight--bad .insight__status {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.insight--none .insight__status {
+  color: var(--muted);
+}

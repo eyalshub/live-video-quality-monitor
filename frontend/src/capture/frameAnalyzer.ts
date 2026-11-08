@@ -3,11 +3,16 @@
  * its pixels and measure. The canvas is never shown, encoded or uploaded.
  */
 import { computeLuma, meanAbsDifference } from '../metrics/frame'
+import { clippingPct, laplacianVariance } from '../metrics/insights'
 
 export interface FrameMetrics {
   brightness: number
   /** null for the first frame and the first frame after a reset (no valid previous frame). */
   motion: number | null
+  /** Informational insights (ADR-013), from the same downscaled luma frame. */
+  sharpness: number
+  crushedPct: number
+  blownPct: number
 }
 
 export class FrameAnalyzer {
@@ -36,9 +41,11 @@ export class FrameAnalyzer {
     const { data } = this.context.getImageData(0, 0, this.width, this.height)
     const brightness = computeLuma(data, this.current)
     const motion = this.hasPrevious ? meanAbsDifference(this.current, this.previous) : null
+    const sharpness = laplacianVariance(this.current, this.width, this.height)
+    const { crushedPct, blownPct } = clippingPct(this.current)
     ;[this.current, this.previous] = [this.previous, this.current]
     this.hasPrevious = true
-    return { brightness, motion }
+    return { brightness, motion, sharpness, crushedPct, blownPct }
   }
 
   /** Forget the previous frame (e.g. after the tab was hidden): its difference would be fake. */

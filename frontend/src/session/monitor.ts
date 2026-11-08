@@ -18,7 +18,9 @@ import { FrameAnalyzer } from '../capture/frameAnalyzer'
 import { startFrameLoop } from '../capture/frameLoop'
 import type { AppConfig } from '../config'
 import type { Sample, Thresholds } from '../metrics/verdict'
+import { type Framing, type InsightSample, measureFraming } from '../metrics/insights'
 import { SecondAggregator } from './aggregator'
+import { InsightAggregator } from './insightAggregator'
 import { Outbox, type SendOutcome } from './outbox'
 
 export type Phase = 'ready' | 'starting' | 'running' | 'stopping' | 'stopped'
@@ -46,6 +48,8 @@ export interface MonitorState {
   summary: Summary | null
   /** Stop request failed; samples are kept and Stop can be retried. */
   stopFailed: boolean
+  /** Latest second of extra insights (ADR-013). Display only: never sent anywhere. */
+  insight: InsightSample | null
 }
 
 const INITIAL_STATE: MonitorState = {
@@ -61,6 +65,7 @@ const INITIAL_STATE: MonitorState = {
   noFrames: false,
   summary: null,
   stopFailed: false,
+  insight: null,
 }
 
 function describeApiError(error: unknown, action: string): string {
@@ -86,6 +91,7 @@ export class MonitorController {
   private stream: MediaStream | null = null
   private analyzer: FrameAnalyzer | null = null
   private aggregator: SecondAggregator | null = null
+  private insights: InsightAggregator | null = null
   private outbox: Outbox | null = null
   private stopLoop: (() => void) | null = null
   private batchTimer: ReturnType<typeof setInterval> | null = null
@@ -193,6 +199,7 @@ export class MonitorController {
     this.analyzer = new FrameAnalyzer(this.config.analysisWidth, this.config.analysisHeight)
     this.startMs = performance.now() // t = 0
     this.aggregator = new SecondAggregator(this.startMs, created.thresholds)
+    this.insights = new InsightAggregator(this.startMs)
     this.outbox = new Outbox(created.max_samples_per_batch)
     this.lastFrameAt = performance.now()
     this.stopLoop = startFrameLoop(video, this.onFrame)
@@ -223,18 +230,29 @@ export class MonitorController {
 
     // Face: every Nth frame of the second, and always its first frame (ADR-011).
     let face: boolean | null = null
+    let framing: Framing | null | undefined // undefined = detector did not run on this frame
     if (aggregator.framesInSecondOf(nowMs) % this.config.faceDetectEveryNFrames === 0) {
       try {
-        face = detector.detect(video, nowMs)
+        const result = detector.detect(video, nowMs)
+        face = result.present
+        framing = result.box
+          ? measureFraming(result.box, video.videoWidth, video.videoHeight)
+          : null
       } catch (error) {
         console.warn('Face detection failed on a frame', error)
       }
     }
 
     this.lastFrameAt = nowMs
-    for (const sample of aggregator.addFrame({ timeMs: nowMs, ...metrics, face })) {
+    const { brightness, motion, sharpness, crushedPct, blownPct } = metrics
+    for (const sample of aggregator.addFrame({ timeMs: nowMs, brightness, motion, face })) {
       this.emit(sample)
     }
+    // Insights are aggregated separately and only displayed (ADR-013).
+    const latestInsight = this.insights
+      ?.addFrame({ timeMs: nowMs, sharpness, crushedPct, blownPct, framing })
+      .at(-1)
+    if (latestInsight) this.set({ insight: latestInsight })
     if (this.state.noFrames) this.set({ noFrames: false })
   }
 
@@ -248,6 +266,8 @@ export class MonitorController {
       () => {
         const at = performance.now()
         for (const sample of aggregator.flushCompleted(at)) this.emit(sample)
+        const latestInsight = this.insights?.flushCompleted(at).at(-1)
+        if (latestInsight) this.set({ insight: latestInsight })
         const stalled = at - this.lastFrameAt > 1000
         if (stalled !== this.state.noFrames) this.set({ noFrames: stalled })
         this.scheduleSecondBoundary()
@@ -304,6 +324,7 @@ export class MonitorController {
     if (this.state.phase !== 'running') return
     this.set({ phase: 'stopping', notice: 'Ending the session…', error: reason ?? null })
     this.aggregator?.discardPartial() // partial last second would under-report FPS
+    this.insights?.discardPartial()
     this.finalChunks = this.outbox?.drainAll() ?? []
     this.teardownCapture()
     await this.sendStop()

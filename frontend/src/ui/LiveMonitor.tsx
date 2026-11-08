@@ -2,6 +2,7 @@ import { useRef } from 'react'
 
 import type { AppConfig } from '../config'
 import { QualityChart } from './QualityChart'
+import { InsightsPanel } from './InsightsPanel'
 import { MetricCards, VerdictBanner } from './LiveStatus'
 import { useMonitor } from './useMonitor'
 
@@ -70,6 +71,12 @@ export function LiveMonitor({ config }: { config: AppConfig }) {
                 <p className="error">No frames received (camera stalled or tab hidden).</p>
               )}
               {thresholds && <MetricCards sample={latest} thresholds={thresholds} />}
+              {isLive &&
+                (config.insights ? (
+                  <InsightsPanel insight={state.insight} limits={config.insights} />
+                ) : (
+                  <p className="hint">Extra insights are off (VITE_SHARPNESS_MIN etc. not set).</p>
+                ))}
               <p className="hint">
                 {state.pending > 0
                   ? `${String(state.pending)} sample(s) pending`
