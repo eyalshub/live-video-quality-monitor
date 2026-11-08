@@ -1,8 +1,8 @@
 import { useRef } from 'react'
 
 import type { AppConfig } from '../config'
-import { REASON_LABELS, type Sample } from '../metrics/verdict'
 import { LiveChart } from './LiveChart'
+import { MetricCards, VerdictBanner } from './LiveStatus'
 import { useMonitor } from './useMonitor'
 
 /** The live chart shows the last 30 seconds (task requirement). */
@@ -10,44 +10,6 @@ const LIVE_WINDOW_SECONDS = 30
 
 function formatNumber(value: number | null): string {
   return value === null ? '—' : value.toFixed(1)
-}
-
-function VerdictBanner({ sample }: { sample: Sample | undefined }) {
-  if (!sample) {
-    return <div className="verdict verdict--none">Measuring the first second…</div>
-  }
-  if (sample.verdict === 'good') {
-    return <div className="verdict verdict--good">Good</div>
-  }
-  const reason = sample.reason ? REASON_LABELS[sample.reason].toLowerCase() : 'unknown'
-  return <div className="verdict verdict--poor">Poor: {reason}</div>
-}
-
-function Metrics({ sample }: { sample: Sample | undefined }) {
-  return (
-    <dl className="metrics">
-      <div>
-        <dt>FPS</dt>
-        <dd>{sample ? sample.fps.toFixed(0) : '—'}</dd>
-      </div>
-      <div>
-        <dt>Brightness</dt>
-        <dd>{formatNumber(sample?.brightness ?? null)}</dd>
-      </div>
-      <div>
-        <dt>Motion</dt>
-        <dd title={sample?.motion === null ? 'Not measurable this second' : undefined}>
-          {formatNumber(sample?.motion ?? null)}
-        </dd>
-      </div>
-      <div>
-        <dt>Face</dt>
-        <dd className={sample && !sample.face ? 'bad' : undefined}>
-          {sample ? (sample.face ? 'Yes' : 'No face') : '—'}
-        </dd>
-      </div>
-    </dl>
-  )
 }
 
 export function LiveMonitor({ config }: { config: AppConfig }) {
@@ -103,11 +65,11 @@ export function LiveMonitor({ config }: { config: AppConfig }) {
 
           {(isLive || phase === 'stopping' || phase === 'stopped') && (
             <>
-              {isLive && <VerdictBanner sample={latest} />}
+              {isLive && thresholds && <VerdictBanner sample={latest} thresholds={thresholds} />}
               {isLive && state.noFrames && (
                 <p className="error">No frames received (camera stalled or tab hidden).</p>
               )}
-              <Metrics sample={latest} />
+              {thresholds && <MetricCards sample={latest} thresholds={thresholds} />}
               <p className="hint">
                 {state.pending > 0
                   ? `${String(state.pending)} sample(s) pending`
