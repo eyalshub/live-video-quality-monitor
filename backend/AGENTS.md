@@ -14,9 +14,9 @@ and computes session summaries. It never receives or stores video, only numbers.
 | `app/core/logging.py` | JSON log formatter |
 | `app/db/models.py` | `MonitoringSession`, `Sample` (schema documented in `docs/data-model.md`) |
 | `app/db/session.py` | Engine, session factory, `get_db` dependency |
-| `app/api/` | Routers (`health.py`; `sessions.py` in Phase 1) |
+| `app/api/` | Routers: `health.py`, `sessions.py` |
 | `app/schemas/` | Pydantic request/response models (they drive OpenAPI → frontend types) |
-| `app/services/` | Business logic (Phase 1) |
+| `app/services/` | `verdict.py` (the rule), `sessions.py` (lifecycle, ingest, summary) |
 | `migrations/` | Alembic. One migration per schema change; never edit an applied one |
 | `tests/` | pytest. DB tests run against `TEST_DATABASE_URL` |
 

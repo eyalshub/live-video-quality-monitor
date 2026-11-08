@@ -23,10 +23,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sessions
+         * @description All sessions, newest first, each with its summary.
+         */
+        get: operations["list_sessions_sessions_get"];
+        put?: never;
+        /**
+         * Create Session
+         * @description Start a session. Returns the thresholds the browser must use for the live verdict.
+         */
+        post: operations["create_session_sessions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{session_id}/samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Samples
+         * @description Store a batch idempotently. Resent samples count as `duplicates`. After Stop nothing is
+         *     written and new samples count as `ignored_after_stop` (ADR-010).
+         */
+        post: operations["add_samples_sessions__session_id__samples_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{session_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop Session
+         * @description End the session, saving any final samples in the same transaction (ADR-004).
+         *     Calling it again returns the same ended_at.
+         */
+        post: operations["stop_session_sessions__session_id__stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Session
+         * @description One session with all its samples (ordered by t) and its summary.
+         */
+        get: operations["get_session_sessions__session_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ErrorBody */
+        ErrorBody: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Details */
+            details?: unknown;
+        };
+        /** ErrorResponse */
+        ErrorResponse: {
+            error: components["schemas"]["ErrorBody"];
+        };
         /** HealthResponse */
         HealthResponse: {
             /**
@@ -39,6 +138,205 @@ export interface components {
              * @enum {string}
              */
             db: "ok" | "error";
+        };
+        /**
+         * IngestResult
+         * @description What happened to the samples of one request (ADR-010).
+         */
+        IngestResult: {
+            /**
+             * Inserted
+             * @description New samples stored
+             */
+            inserted: number;
+            /**
+             * Duplicates
+             * @description Already stored, or repeated in the request; unchanged
+             */
+            duplicates: number;
+            /**
+             * Ignored After Stop
+             * @description New samples for an ended session; not stored
+             */
+            ignored_after_stop: number;
+        };
+        /**
+         * SampleIn
+         * @description One per-second sample. Every key is required; `motion` and `reason` may be null.
+         */
+        SampleIn: {
+            /**
+             * T
+             * @description Whole seconds since the session started
+             */
+            t: number;
+            /**
+             * Fps
+             * @description Frames actually processed in that second
+             */
+            fps: number;
+            /**
+             * Brightness
+             * @description Mean luma 0-255
+             */
+            brightness: number;
+            /**
+             * Motion
+             * @description Mean abs. luma difference vs. previous frame; null = not measurable (ADR-009)
+             */
+            motion: number | null;
+            /**
+             * Face
+             * @description At least one frame in that second had a face
+             */
+            face: boolean;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "good" | "poor";
+            /** Reason */
+            reason: ("no_face" | "too_dark" | "too_bright" | "hold_still" | "low_fps") | null;
+        };
+        /** SampleOut */
+        SampleOut: {
+            /** T */
+            t: number;
+            /** Fps */
+            fps: number;
+            /** Brightness */
+            brightness: number;
+            /** Motion */
+            motion: number | null;
+            /** Face */
+            face: boolean;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "good" | "poor";
+            /** Reason */
+            reason: ("no_face" | "too_dark" | "too_bright" | "hold_still" | "low_fps") | null;
+        };
+        /** SamplesBatch */
+        SamplesBatch: {
+            /**
+             * Samples
+             * @description At most MAX_SAMPLES_PER_BATCH samples; same t twice -> first wins
+             */
+            samples: components["schemas"]["SampleIn"][];
+        };
+        /** SessionCreated */
+        SessionCreated: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            thresholds: components["schemas"]["Thresholds"];
+        };
+        /** SessionDetail */
+        SessionDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Ended At
+             * @description null while running or if the tab was closed
+             */
+            ended_at: string | null;
+            thresholds: components["schemas"]["Thresholds"];
+            summary: components["schemas"]["Summary"];
+            /**
+             * Samples
+             * @description Ordered by t
+             */
+            samples: components["schemas"]["SampleOut"][];
+        };
+        /** SessionOut */
+        SessionOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Ended At
+             * @description null while running or if the tab was closed
+             */
+            ended_at: string | null;
+            thresholds: components["schemas"]["Thresholds"];
+            summary: components["schemas"]["Summary"];
+        };
+        /** StopRequest */
+        StopRequest: {
+            /**
+             * Samples
+             * @description Final samples, saved in the same transaction (ADR-004)
+             */
+            samples?: components["schemas"]["SampleIn"][];
+        };
+        /** StopResponse */
+        StopResponse: {
+            session: components["schemas"]["SessionOut"];
+            ingest: components["schemas"]["IngestResult"];
+        };
+        /**
+         * Summary
+         * @description Computed by the backend at read time. All fields except sample_count are null when the
+         *     session has no samples.
+         */
+        Summary: {
+            /**
+             * Duration S
+             * @description t of the last sample
+             */
+            duration_s: number | null;
+            /** Avg Fps */
+            avg_fps: number | null;
+            /**
+             * Face Pct
+             * @description % of seconds with a face
+             */
+            face_pct: number | null;
+            /**
+             * Good Pct
+             * @description % of seconds with verdict good
+             */
+            good_pct: number | null;
+            /** Sample Count */
+            sample_count: number;
+        };
+        /**
+         * Thresholds
+         * @description Threshold snapshot of a session (ADR-002).
+         */
+        Thresholds: {
+            /** Fps Min */
+            fps_min: number;
+            /** Brightness Min */
+            brightness_min: number;
+            /** Brightness Max */
+            brightness_max: number;
+            /** Motion Max */
+            motion_max: number;
         };
     };
     responses: never;
@@ -74,6 +372,174 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    list_sessions_sessions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"][];
+                };
+            };
+        };
+    };
+    create_session_sessions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionCreated"];
+                };
+            };
+        };
+    };
+    add_samples_sessions__session_id__samples_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SamplesBatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestResult"];
+                };
+            };
+            /** @description Unknown session (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request: validation_error, inconsistent_verdict, batch_too_large */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    stop_session_sessions__session_id__stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["StopRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StopResponse"];
+                };
+            };
+            /** @description Unknown session (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request: validation_error, inconsistent_verdict, batch_too_large */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_session_sessions__session_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDetail"];
+                };
+            };
+            /** @description Unknown session (not_found) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request: validation_error, inconsistent_verdict, batch_too_large */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
