@@ -48,4 +48,4 @@ block them; it works the same everywhere.
 3. **Uniform errors:** every error body is `{"error": {"code", "message", "details"}}`.
 4. **Summary is computed server-side** at read time with SQL aggregates; never stored, never
    trusted from the client. Empty session → `null` averages.
-5. **Ended sessions are immutable** (ADR-004, ADR-005).
+5. **Ended sessions are immutable** (ADR-004, ADR-010): late samples are counted, never written.

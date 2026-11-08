@@ -24,7 +24,7 @@ Sessions/samples endpoints, camera, metrics, chart, history, deployment configs.
 ## Known notes
 - Windows Application Control may block `.venv/Scripts/*.exe` shims → use `uv run python -m <tool>`.
 - TypeScript pinned to 5.9 (ADR-001).
-- Error responses (404/409/422) are not yet declared in OpenAPI; add `responses=` with
+- Error responses (404/422) are not yet declared in OpenAPI; add `responses=` with
   `ErrorResponse` on the P1 routes so the frontend gets typed errors.
 
 ## Next step — P1 (Sessions API)
@@ -33,6 +33,6 @@ Sessions/samples endpoints, camera, metrics, chart, history, deployment configs.
 2. `POST /sessions` (threshold snapshot) + Pydantic `Sample` schema (ranges, 1-decimal check,
    enums) + `ErrorResponse` in OpenAPI.
 3. `POST /sessions/{id}/samples`: batch limit, first-wins within the batch, `ON CONFLICT DO NOTHING
-   RETURNING`, verdict consistency (422), ended-session rule (ADR-005).
+   RETURNING`, verdict consistency (422), ended-session rule (ADR-010).
 4. `POST /sessions/{id}/stop` (ADR-004), `GET /sessions`, `GET /sessions/{id}` with the SQL summary.
 5. Regenerate frontend types (`npm run gen:api`).

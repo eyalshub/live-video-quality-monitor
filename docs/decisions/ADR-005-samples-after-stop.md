@@ -1,6 +1,6 @@
 # ADR-005 — Samples that arrive after Stop
 
-- **Status:** Accepted (2026-11-08)
+- **Status:** Superseded by [ADR-010](ADR-010-samples-after-stop-200.md) (2026-11-08)
 
 ## Context
 A samples request may be in flight (or retried) when Stop arrives. The task asks us to handle

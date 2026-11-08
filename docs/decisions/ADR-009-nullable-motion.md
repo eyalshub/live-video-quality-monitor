@@ -14,6 +14,9 @@ there is no real motion value. Writing `0` would be a fake value (iron rule 2).
 - When `motion` is null, the `hold_still` rule is skipped: no evidence of motion is not evidence
   of too much motion. The chart shows a gap.
 
+Considered dropping such seconds instead (required motion); rejected because the second carries
+real fps/brightness/face values and dropping it flatters the summary.
+
 ## Consequences
 - The verdict rule on both sides handles `motion = null`.
 - The summary does not use motion, so it is unaffected.

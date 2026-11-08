@@ -93,9 +93,9 @@ Full list: [`docs/edge-cases.md`](docs/edge-cases.md). The main ones:
 - **Stop twice:** the second call returns 200 with the same `ended_at`
   ([ADR-004](docs/decisions/ADR-004-stop-carries-final-samples.md)).
 - **Samples after Stop:** Stop carries the browser's remaining samples in the same request.
-  A late retry of samples that are already stored → 200 (duplicates). A brand-new sample for an
-  ended session → 409 `session_ended`, so an ended session never changes
-  ([ADR-005](docs/decisions/ADR-005-samples-after-stop.md)).
+  Anything that still arrives after Stop gets 200 and is never written: samples already stored
+  are counted as `duplicates`, new ones as `ignored_after_stop`. No error, and an ended session
+  never changes ([ADR-010](docs/decisions/ADR-010-samples-after-stop-200.md)).
 - **Honest numbers:** a second with no processed frames produces no sample. Motion that cannot be
   measured is `null`, never `0` ([ADR-009](docs/decisions/ADR-009-nullable-motion.md)).
 - TODO (Phase 2-3): camera denied / not found / busy, tab hidden, tab closed without Stop.

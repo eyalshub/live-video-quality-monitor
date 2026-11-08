@@ -18,7 +18,6 @@ Status: ✅ implemented · 🔜 planned (phase in brackets).
 |---|---|---|
 | 404 | `not_found` | Unknown route or unknown session |
 | 405 | `method_not_allowed` | Wrong method |
-| 409 | `session_ended` | New samples for a session that has ended (ADR-005) 🔜 |
 | 422 | `batch_too_large` | More than `MAX_SAMPLES_PER_BATCH` samples 🔜 |
 | 422 | `validation_error` | Missing fields, wrong types, out-of-range values; `details` = list of `{loc, msg, type}` |
 | 422 | `inconsistent_verdict` | verdict/reason do not match the values + thresholds (ADR-002) 🔜 |
@@ -47,8 +46,9 @@ Request: `{ "samples": [Sample, ...] }` (1..`MAX_SAMPLES_PER_BATCH`).
   `verdict` `good|poor`; `reason` one of `no_face|too_dark|too_bright|hold_still|low_fps` or `null`.
 - Values must already be rounded to 1 decimal (ADR-003).
 - Same `t` twice in one batch → the first one wins.
-- Response 200: `{ "inserted": n, "duplicates": m }`.
-- Session ended: if **all** samples are duplicates → 200; if any is new → 409 `session_ended`, nothing written (ADR-005).
+- Response 200: `{ "inserted": n, "duplicates": m, "ignored_after_stop": k }`.
+- Session ended (ADR-010): always 200, nothing is written. Existing `t` → `duplicates`;
+  new `t` → `ignored_after_stop`. Validation (422) still applies first.
 
 ### 🔜 `POST /sessions/{id}/stop` (P1)
 Request: optional `{ "samples": [Sample, ...] }`; empty body allowed.
