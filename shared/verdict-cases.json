@@ -1,0 +1,155 @@
+{
+  "description": "Single source of verdict test cases, read by backend pytest and frontend Vitest. Rule (docs/data-model.md): no_face -> too_dark -> too_bright -> hold_still (skipped when motion is null, ADR-009) -> low_fps -> good. Boundaries are OK (brightness == min, motion == max, fps == min). Inputs are already rounded to 1 decimal (ADR-003).",
+  "cases": [
+    {
+      "name": "all metrics inside limits",
+      "input": { "fps": 30, "brightness": 130, "motion": 3, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "good", "reason": null }
+    },
+    {
+      "name": "no face, everything else fine",
+      "input": { "fps": 30, "brightness": 130, "motion": 3, "face": false },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "no_face" }
+    },
+    {
+      "name": "no face wins over every other failure",
+      "input": { "fps": 5, "brightness": 10, "motion": 50, "face": false },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "no_face" }
+    },
+    {
+      "name": "brightness just below min is too dark",
+      "input": { "fps": 30, "brightness": 59.9, "motion": 3, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "too_dark" }
+    },
+    {
+      "name": "brightness exactly at min is OK",
+      "input": { "fps": 30, "brightness": 60, "motion": 3, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "good", "reason": null }
+    },
+    {
+      "name": "brightness 0 is too dark",
+      "input": { "fps": 30, "brightness": 0, "motion": 0, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "too_dark" }
+    },
+    {
+      "name": "brightness just above max is too bright",
+      "input": { "fps": 30, "brightness": 200.1, "motion": 3, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "too_bright" }
+    },
+    {
+      "name": "brightness exactly at max is OK",
+      "input": { "fps": 30, "brightness": 200, "motion": 3, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "good", "reason": null }
+    },
+    {
+      "name": "brightness 255 is too bright",
+      "input": { "fps": 30, "brightness": 255, "motion": 3, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "too_bright" }
+    },
+    {
+      "name": "too dark wins over hold still and low fps",
+      "input": { "fps": 5, "brightness": 30, "motion": 50, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "too_dark" }
+    },
+    {
+      "name": "too bright wins over hold still and low fps",
+      "input": { "fps": 5, "brightness": 250, "motion": 50, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "too_bright" }
+    },
+    {
+      "name": "motion just above max is hold still",
+      "input": { "fps": 30, "brightness": 130, "motion": 20.1, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "hold_still" }
+    },
+    {
+      "name": "motion exactly at max is OK",
+      "input": { "fps": 30, "brightness": 130, "motion": 20, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "good", "reason": null }
+    },
+    {
+      "name": "motion 255 is hold still",
+      "input": { "fps": 30, "brightness": 130, "motion": 255, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "hold_still" }
+    },
+    {
+      "name": "hold still wins over low fps",
+      "input": { "fps": 5, "brightness": 130, "motion": 30, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "hold_still" }
+    },
+    {
+      "name": "fps just below min is low fps",
+      "input": { "fps": 14.9, "brightness": 130, "motion": 3, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "low_fps" }
+    },
+    {
+      "name": "fps exactly at min is OK (browser rounded 14.96 to 15.0 before judging, ADR-003)",
+      "input": { "fps": 15, "brightness": 130, "motion": 3, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "good", "reason": null }
+    },
+    {
+      "name": "fps 0 is low fps",
+      "input": { "fps": 0, "brightness": 130, "motion": 0, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "low_fps" }
+    },
+    {
+      "name": "motion null and everything else OK is good (hold_still skipped)",
+      "input": { "fps": 30, "brightness": 130, "motion": null, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "good", "reason": null }
+    },
+    {
+      "name": "motion null with fps 10 is low fps (hold_still skipped)",
+      "input": { "fps": 10, "brightness": 130, "motion": null, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "low_fps" }
+    },
+    {
+      "name": "motion null does not hide too dark",
+      "input": { "fps": 30, "brightness": 40, "motion": null, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "too_dark" }
+    },
+    {
+      "name": "motion null does not hide no face",
+      "input": { "fps": 30, "brightness": 130, "motion": null, "face": false },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "no_face" }
+    },
+    {
+      "name": "session thresholds are used, not defaults: fps 23.9 with fps_min 24",
+      "input": { "fps": 23.9, "brightness": 130, "motion": 3, "face": true },
+      "thresholds": { "fps_min": 24, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "low_fps" }
+    },
+    {
+      "name": "session thresholds are used, not defaults: brightness 79.9 with brightness_min 80",
+      "input": { "fps": 30, "brightness": 79.9, "motion": 3, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 80, "brightness_max": 180, "motion_max": 20 },
+      "expected": { "verdict": "poor", "reason": "too_dark" }
+    },
+    {
+      "name": "session thresholds are used, not defaults: motion 10.1 with motion_max 10",
+      "input": { "fps": 30, "brightness": 130, "motion": 10.1, "face": true },
+      "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 10 },
+      "expected": { "verdict": "poor", "reason": "hold_still" }
+    }
+  ]
+}

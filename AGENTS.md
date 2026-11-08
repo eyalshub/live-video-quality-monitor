@@ -20,6 +20,7 @@ A Python backend stores each session's per-second samples in Postgres; a History
 |---|---|
 | `backend/` | FastAPI + SQLAlchemy + Alembic API. See `backend/AGENTS.md`. |
 | `frontend/` | React + Vite + TypeScript app. See `frontend/AGENTS.md`. |
+| `shared/verdict-cases.json` | Verdict test cases read by both pytest and Vitest (one source). |
 | `docs/requirements.md` | The task requirements as a checklist. |
 | `docs/architecture.md` | Browser → API → DB, per-second sample flow. |
 | `docs/api-contract.md` | Endpoints, payloads, error format. |
