@@ -60,3 +60,20 @@ class SessionCreated(BaseModel):
     id: uuid.UUID
     started_at: datetime
     thresholds: Thresholds
+
+
+class SamplesBatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    samples: list[SampleIn] = Field(
+        min_length=1,
+        description="At most MAX_SAMPLES_PER_BATCH samples; same t twice -> first wins",
+    )
+
+
+class IngestResult(BaseModel):
+    """What happened to the samples of one request (ADR-010)."""
+
+    inserted: int = Field(description="New samples stored")
+    duplicates: int = Field(description="Already stored, or repeated in the request; unchanged")
+    ignored_after_stop: int = Field(description="New samples for an ended session; not stored")
