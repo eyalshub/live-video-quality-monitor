@@ -137,8 +137,13 @@ export class MonitorController {
   deactivate(): void {
     window.removeEventListener('pagehide', this.onPageHide)
     document.removeEventListener('visibilitychange', this.onVisibilityChange)
-    if (this.state.phase === 'running') this.onPageHide() // keep what we measured
-    this.teardownCapture()
+    if (this.state.phase === 'running') {
+      // Leaving the live screen (e.g. to History) ends the session like Stop: camera released,
+      // outbox sent inside POST /stop.
+      void this.stop()
+    } else {
+      this.teardownCapture()
+    }
   }
 
   // --- start -----------------------------------------------------------------------------

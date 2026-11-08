@@ -10,6 +10,8 @@ export type SessionCreated = Schemas['SessionCreated']
 export type SampleIn = Schemas['SampleIn']
 export type IngestResult = Schemas['IngestResult']
 export type StopResponse = Schemas['StopResponse']
+export type SessionOut = Schemas['SessionOut']
+export type SessionDetail = Schemas['SessionDetail']
 export type ErrorBody = Schemas['ErrorBody']
 
 export type HealthResult =
@@ -118,6 +120,28 @@ export function stopSession(
     config,
     `/sessions/${sessionId}/stop`,
     { method: 'POST', body: JSON.stringify({ samples }) },
+    fetchImpl,
+  )
+}
+
+export function listSessions(
+  config: ApiConfig,
+  signal?: AbortSignal,
+  fetchImpl?: typeof fetch,
+): Promise<SessionOut[]> {
+  return requestJson<SessionOut[]>(config, '/sessions', { method: 'GET', signal }, fetchImpl)
+}
+
+export function getSession(
+  config: ApiConfig,
+  sessionId: string,
+  signal?: AbortSignal,
+  fetchImpl?: typeof fetch,
+): Promise<SessionDetail> {
+  return requestJson<SessionDetail>(
+    config,
+    `/sessions/${encodeURIComponent(sessionId)}`,
+    { method: 'GET', signal },
     fetchImpl,
   )
 }
