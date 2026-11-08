@@ -1,6 +1,7 @@
 import { ApiError, getSession, listSessions, NetworkError, type SessionOut } from '../api/client'
 import type { AppConfig } from '../config'
 import { formatSeconds } from './chartLayout'
+import { formatDateTime } from './format'
 import { QualityChart } from './QualityChart'
 import { Link } from './Link'
 import { navigate } from './router'
@@ -8,12 +9,6 @@ import { type ApiState, useApi } from './useApi'
 
 /** The chart always shows at least this many seconds so short sessions do not look stretched. */
 const MIN_CHART_SECONDS = 30
-
-const dateTime = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'medium' })
-
-function formatDateTime(iso: string): string {
-  return dateTime.format(new Date(iso))
-}
 
 function orDash(value: number | null, suffix = ''): string {
   return value === null ? '—' : `${value.toFixed(1)}${suffix}`
