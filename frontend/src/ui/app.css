@@ -21,3 +21,31 @@ body {
   margin: 0 auto;
   padding: 2rem 1rem;
 }
+
+.health {
+  border: 1px solid var(--muted);
+  border-left-width: 6px;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
+.health--ok {
+  border-color: var(--ok);
+}
+
+.health--bad {
+  border-color: var(--bad);
+}
+
+.health p {
+  margin: 0.25rem 0;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.health pre {
+  white-space: pre-wrap;
+}
