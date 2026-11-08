@@ -29,9 +29,12 @@ Camera, metrics, chart, outbox, history UI, deployment configs.
 ## Known notes
 - Windows Application Control may block `.venv/Scripts/*.exe` shims → use `uv run python -m <tool>`.
 - TypeScript pinned to 5.9 (ADR-001).
-- The session row lock (`SELECT … FOR UPDATE`) that serializes ingest and Stop is covered by the
-  behavior tests, but there is no concurrent (multi-thread) race test yet.
 - CI has not run yet: waiting for the GitHub repository URL.
+
+## Known debt
+- No concurrent (multi-thread) race test for Stop vs. an in-flight samples request. The session row
+  lock (`SELECT … FOR UPDATE`) serializes them; behavior before/after Stop is tested. Decided
+  2026-11-08: the lock is enough for now.
 
 ## Next step — P1.5 (early smoke deploy)
 Blocked on accounts. Needs: the GitHub repo (user is creating it) and free accounts on Neon, Render
