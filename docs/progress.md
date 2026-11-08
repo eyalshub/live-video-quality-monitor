@@ -38,7 +38,7 @@ Camera, metrics, chart, outbox, history UI, deployment configs.
 - Windows Application Control may block `.venv/Scripts/*.exe` shims → use `uv run python -m <tool>`.
 - TypeScript pinned to 5.9 (ADR-001).
 - `VITE_*` values are baked in at build time. A Vercel env change needs a new build (redeploy).
-  Verify with the deployed bundle: it contains `VITE_<NAME>:\`<value>\``.
+  Verify with the deployed bundle: it contains `` VITE_<NAME>:`<value>` ``.
 
 ## Known debt
 - No automated browser test in CI. A headless-Chrome smoke run (fake camera, CDP) passed locally
