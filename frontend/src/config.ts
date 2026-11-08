@@ -18,8 +18,6 @@ export interface AppConfig {
   apiTimeoutMs: number
   /** Run the face detector on every Nth frame of each second (always on its first frame). */
   faceDetectEveryNFrames: number
-  /** Face detector's minimum detection confidence, 0 < x < 1 (MediaPipe minDetectionConfidence). */
-  faceMinConfidence: number
   /**
    * Extra insights (ADR-013): informational limits, never part of the verdict. Optional as a
    * group: null when none of the four variables is set (the panel is then off). Setting only some
@@ -79,23 +77,6 @@ export function parseConfig(env: RawEnv): AppConfig {
     return value.replace(/\/+$/, '')
   }
 
-  /** A decimal strictly between `min` and `max` (both exclusive). */
-  const readFraction = (name: string, min: number, max: number): number => {
-    const value = readString(name)
-    if (value === undefined) return Number.NaN
-    if (!/^\d*\.?\d+$/.test(value)) {
-      problems.push(`${name} must be a number (got "${value}")`)
-      return Number.NaN
-    }
-    const parsed = Number(value)
-    if (!(parsed > min && parsed < max)) {
-      problems.push(
-        `${name} must be greater than ${String(min)} and less than ${String(max)} (got ${value})`,
-      )
-    }
-    return parsed
-  }
-
   const readInt = (name: string, min: number, max: number): number => {
     const value = readString(name)
     if (value === undefined) return Number.NaN
@@ -137,7 +118,6 @@ export function parseConfig(env: RawEnv): AppConfig {
     analysisHeight: readInt('VITE_ANALYSIS_HEIGHT', 16, 1080),
     apiTimeoutMs: readInt('VITE_API_TIMEOUT_MS', 1_000, 300_000),
     faceDetectEveryNFrames: readInt('VITE_FACE_DETECT_EVERY_N_FRAMES', 1, 30),
-    faceMinConfidence: readFraction('VITE_FACE_MIN_CONFIDENCE', 0, 1),
     insights: readInsights(),
   }
 

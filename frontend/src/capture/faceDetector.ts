@@ -23,13 +23,12 @@ export interface FaceDetectorHandle {
   close(): void
 }
 
-export async function loadFaceDetector(minConfidence: number): Promise<FaceDetectorHandle> {
+export async function loadFaceDetector(): Promise<FaceDetectorHandle> {
   const fileset = await FilesetResolver.forVisionTasks(WASM_BASE)
   const create = (delegate: 'GPU' | 'CPU') =>
     FaceDetector.createFromOptions(fileset, {
       baseOptions: { modelAssetPath: MODEL_URL, delegate },
       runningMode: 'VIDEO',
-      minDetectionConfidence: minConfidence, // explicit, from VITE_FACE_MIN_CONFIDENCE
     })
 
   let delegate: 'GPU' | 'CPU' = 'GPU'
