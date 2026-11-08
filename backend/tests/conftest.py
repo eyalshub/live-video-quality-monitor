@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import Connection, Engine, create_engine
+from sqlalchemy import Connection, Engine, create_engine, text
 
 from app.core.config import Settings, normalize_database_url
 from app.main import create_app
@@ -57,7 +57,15 @@ def app(test_database_url: str) -> FastAPI:
 
 
 @pytest.fixture
-def client(app: FastAPI) -> Iterator[TestClient]:
+def clean_db(migrated_engine: Engine) -> Engine:
+    """API tests commit real transactions, so start each one from empty tables."""
+    with migrated_engine.begin() as connection:
+        connection.execute(text("TRUNCATE samples, sessions"))
+    return migrated_engine
+
+
+@pytest.fixture
+def client(app: FastAPI, clean_db: Engine) -> Iterator[TestClient]:
     with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
 
