@@ -20,9 +20,20 @@ not degrade the thing it measures.
   `N = 2` or `3`. At 30 FPS that is still 10–15 checks per second, far more than needed to answer
   "was there a face in this second?".
 - Delegate: GPU, with automatic fallback to CPU if GPU creation fails.
+- Minimum detection confidence is explicit configuration, `VITE_FACE_MIN_CONFIDENCE` (0 < x < 1,
+  0.5 in `.env.example`), passed to `FaceDetector.createFromOptions` as `minDetectionConfidence`,
+  instead of relying on MediaPipe's implicit default (iron rule 3).
 - The wasm runtime and the model are served by the app itself (`public/mediapipe/wasm`, copied from
   `node_modules` before `dev`/`build`; `public/models/blaze_face_short_range.tflite`, committed),
   never from a third-party CDN.
+
+## Alternatives considered
+BlazeFace **full range** and MediaPipe **Face Landmarker** are heavier and add nothing at laptop
+distance, where the short-range model is designed to work. **YuNet** (via OpenCV.js or ONNX
+Runtime Web) is more accurate on small or occluded faces, but costs several MB and more
+integration work. **face-api.js** is unmaintained. The browser **Shape Detection API**
+(`FaceDetector`) is still experimental and not available everywhere. **Server-side detection** is
+out of the question: it would send video to the backend and break iron rule 1.
 
 ## Consequences
 - FPS honesty is protected by a config change, not a code change.

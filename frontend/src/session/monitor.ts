@@ -124,7 +124,7 @@ export class MonitorController {
   activate(): void {
     window.addEventListener('pagehide', this.onPageHide)
     document.addEventListener('visibilitychange', this.onVisibilityChange)
-    this.detectorLoad ??= loadFaceDetector().then(
+    this.detectorLoad ??= loadFaceDetector(this.config.faceMinConfidence).then(
       (detector) => {
         this.detector = detector
         this.set({ detectorStatus: 'ready' })
