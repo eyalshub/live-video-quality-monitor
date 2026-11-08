@@ -59,7 +59,10 @@ def create_session(db: DbSession, settings: AppSettings) -> SessionCreated:
     """Start a session. Returns the thresholds the browser must use for the live verdict."""
     session = service.create_session(db, settings)
     return SessionCreated(
-        id=session.id, started_at=session.started_at, thresholds=thresholds_out(session)
+        id=session.id,
+        started_at=session.started_at,
+        thresholds=thresholds_out(session),
+        max_samples_per_batch=settings.max_samples_per_batch,
     )
 
 

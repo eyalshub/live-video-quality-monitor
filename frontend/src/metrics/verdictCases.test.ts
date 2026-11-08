@@ -1,15 +1,16 @@
 /**
- * The shared verdict case table (shared/verdict-cases.json) is read by both test suites.
- * Phase 2 adds the TypeScript verdict function and runs it over every case here.
+ * The shared verdict case table (shared/verdict-cases.json) is the single source of truth for
+ * both the Python and the TypeScript verdict rule.
  */
 import { describe, expect, it } from 'vitest'
 
 import table from '../../../shared/verdict-cases.json'
+import { evaluateVerdict } from './verdict'
 
 const REASONS = ['no_face', 'too_dark', 'too_bright', 'hold_still', 'low_fps'] as const
 
 describe('shared verdict case table', () => {
-  it('is readable from the frontend and well-formed', () => {
+  it('is well-formed', () => {
     expect(table.cases.length).toBeGreaterThan(0)
     for (const testCase of table.cases) {
       const { input, thresholds, expected } = testCase
@@ -30,4 +31,13 @@ describe('shared verdict case table', () => {
     for (const reason of REASONS) expect(reasons).toContain(reason)
     expect(table.cases.some((testCase) => testCase.input.motion === null)).toBe(true)
   })
+})
+
+describe('evaluateVerdict', () => {
+  it.each(table.cases.map((testCase) => [testCase.name, testCase] as const))(
+    '%s',
+    (_name, testCase) => {
+      expect(evaluateVerdict(testCase.input, testCase.thresholds)).toEqual(testCase.expected)
+    },
+  )
 })

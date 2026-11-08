@@ -16,6 +16,7 @@
     "gen:api": "node scripts/gen-api.ts"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.2.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

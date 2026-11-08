@@ -23,6 +23,7 @@ def test_create_returns_id_start_and_thresholds(client: TestClient) -> None:
         "brightness_max": 200,
         "motion_max": 20,
     }
+    assert body["max_samples_per_batch"] == 120
 
 
 def test_each_session_gets_a_new_id(client: TestClient) -> None:

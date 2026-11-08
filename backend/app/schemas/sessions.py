@@ -60,6 +60,9 @@ class SessionCreated(BaseModel):
     id: uuid.UUID
     started_at: datetime
     thresholds: Thresholds
+    max_samples_per_batch: int = Field(
+        description="Largest samples list one request may carry; the client splits its outbox"
+    )
 
 
 class SamplesBatch(BaseModel):
