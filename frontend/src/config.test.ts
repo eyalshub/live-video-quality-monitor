@@ -8,6 +8,7 @@ const VALID = {
   VITE_ANALYSIS_WIDTH: '160',
   VITE_ANALYSIS_HEIGHT: '120',
   VITE_API_TIMEOUT_MS: '70000',
+  VITE_FACE_DETECT_EVERY_N_FRAMES: '1',
 }
 
 function problemsFor(env: Record<string, unknown>): readonly string[] {
@@ -28,6 +29,7 @@ describe('parseConfig', () => {
       analysisWidth: 160,
       analysisHeight: 120,
       apiTimeoutMs: 70000,
+      faceDetectEveryNFrames: 1,
     })
   })
 
@@ -59,6 +61,7 @@ describe('parseConfig', () => {
     ['VITE_ANALYSIS_WIDTH', '0'],
     ['VITE_ANALYSIS_HEIGHT', '-120'],
     ['VITE_API_TIMEOUT_MS', '999999999'],
+    ['VITE_FACE_DETECT_EVERY_N_FRAMES', '0'],
   ])('rejects %s=%s', (name, value) => {
     const problems = problemsFor({ ...VALID, [name]: value })
     expect(problems).toHaveLength(1)

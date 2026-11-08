@@ -90,6 +90,7 @@ jobs:
       VITE_ANALYSIS_WIDTH: "160"
       VITE_ANALYSIS_HEIGHT: "120"
       VITE_API_TIMEOUT_MS: "70000"
+      VITE_FACE_DETECT_EVERY_N_FRAMES: "1"
     steps:
       - uses: actions/checkout@v7
 

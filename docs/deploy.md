@@ -31,7 +31,7 @@ backend's CORS needs the frontend URL.
 | `VITE_ANALYSIS_WIDTH` | `160` |
 | `VITE_ANALYSIS_HEIGHT` | `120` |
 | `VITE_API_TIMEOUT_MS` | `70000` |
-| `VITE_FACE_DETECT_EVERY_N_FRAMES` | `1` (see ADR-011) |
+| `VITE_FACE_DETECT_EVERY_N_FRAMES` | `1` (see [ADR-011](decisions/ADR-011-face-detection-cadence.md)) |
 
 `VITE_*` values are baked into the bundle **at build time**. After changing one, redeploy.
 

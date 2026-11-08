@@ -13,7 +13,9 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "gen:api": "node scripts/gen-api.ts"
+    "gen:api": "node scripts/gen-api.ts",
+    "predev": "node scripts/copy-mediapipe.ts",
+    "prebuild": "node scripts/copy-mediapipe.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.2.2",

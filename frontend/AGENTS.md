@@ -13,11 +13,12 @@ backend.
 | `src/config.ts`       | `parseConfig(env)` / `getConfig()`: validates every `VITE_*` variable; no defaults |
 | `src/api/client.ts`   | fetch wrapper (timeout from config, cancellable)                                   |
 | `src/api/schema.d.ts` | **Generated** by `npm run gen:api` from the backend OpenAPI. Never edit by hand    |
-| `src/metrics/`        | Pure functions: luma, motion, aggregation, verdict (Phase 2)                       |
-| `src/capture/`        | Camera, frame loop, canvas downscale, face detector (Phase 2)                      |
-| `src/session/`        | Per-second aggregator, outbox with retry / Stop flush / `pagehide` (Phase 2-3)     |
+| `src/metrics/`        | Pure functions: luma, motion, round1, verdict (tested on shared cases)             |
+| `src/capture/`        | Camera, frame loop (rVFC / rAF), canvas analyzer, MediaPipe face detector          |
+| `src/session/`        | Per-second aggregator, outbox, `MonitorController` (Start/Stop/pagehide)           |
 | `src/ui/`             | React components                                                                   |
-| `scripts/gen-api.ts`  | Type generation script (runs on Node 24 directly, no build step)                   |
+| `scripts/`            | `gen-api.ts` (API types), `copy-mediapipe.ts` (wasm into public/, pre dev/build)   |
+| `public/models/`      | BlazeFace short-range model, served by the app (ADR-011)                           |
 
 ## Commands (run inside `frontend/`)
 

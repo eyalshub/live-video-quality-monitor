@@ -239,6 +239,11 @@ export interface components {
              */
             started_at: string;
             thresholds: components["schemas"]["Thresholds"];
+            /**
+             * Max Samples Per Batch
+             * @description Largest samples list one request may carry; the client splits its outbox
+             */
+            max_samples_per_batch: number;
         };
         /** SessionDetail */
         SessionDetail: {

@@ -5,9 +5,9 @@
 |---|---|---|
 | **P0** Foundation | Repo, docs, ADRs, backend skeleton (config, errors, logging, health), data model + migration, frontend skeleton (config, health page), CI | ✅ done (2026-11-08) |
 | **P1** Sessions API + tests | `POST /sessions`, samples, stop, list, detail; verdict consistency; summary SQL; idempotency & edge-case tests | ✅ done (2026-11-08) |
-| **P1.5** Early smoke deploy | Render (backend) + Neon (DB, Postgres 16) + Vercel (frontend); prove HTTPS, CORS, cold start | ⏳ |
-| **P2** Capture & metrics | Camera, frame loop, luma/motion/verdict pure functions + tests, face detector, per-second aggregator | ⏳ |
-| **P3** Live UI | Live metrics, verdict, 30 s chart, outbox, Start/Stop, `pagehide` flush, error states | ⏳ |
+| **P1.5** Early smoke deploy | Render (backend) + Neon (DB, Postgres 16) + Vercel (frontend); prove HTTPS, CORS, cold start | 🚧 configs ready (`render.yaml`, `vercel.json`, `docs/deploy.md`); waiting for accounts |
+| **P2** Capture & metrics | Camera, frame loop, luma/motion/verdict pure functions + tests, face detector, per-second aggregator | 🚧 built; awaiting real-camera check |
+| **P3** Live UI | Live metrics, verdict, 30 s chart, outbox, Start/Stop, `pagehide` flush, error states | 🚧 built; awaiting real-camera check |
 | **P4** Full deploy | Production config on all three services, end-to-end check in Chrome | ⏳ |
 | **P5** History (bonus) | Session list, details chart, summary, empty states | ⏳ |
 | **P6** Polish | README final, thresholds, edge-case choices, demo rehearsal | ⏳ |
@@ -32,16 +32,14 @@ Camera, metrics, chart, outbox, history UI, deployment configs.
 - CI has not run yet: waiting for the GitHub repository URL.
 
 ## Known debt
+- No automated browser test in CI. A headless-Chrome smoke run (fake camera, CDP) passed locally
+  on 2026-11-08: detector loads, samples saved, Stop releases the camera and returns a summary.
 - No concurrent (multi-thread) race test for Stop vs. an in-flight samples request. The session row
   lock (`SELECT … FOR UPDATE`) serializes them; behavior before/after Stop is tested. Decided
   2026-11-08: the lock is enough for now.
 
-## Next step — P1.5 (early smoke deploy)
-Blocked on accounts. Needs: the GitHub repo (user is creating it) and free accounts on Neon, Render
-and Vercel. Nothing is signed up or pushed without the user's go-ahead.
-1. Push; confirm CI is green on GitHub.
-2. Neon project on Postgres 16 → `DATABASE_URL`; run `alembic upgrade head` against it.
-3. Render web service from `backend/` (start: `uvicorn app.main:create_app --factory --host 0.0.0.0
-   --port $PORT`; env from `backend/.env.example`).
-4. Vercel project from `frontend/` with `VITE_*` env; add the Vercel URL to `CORS_ORIGINS`.
-5. Prove: HTTPS page shows `backend: ok, db: ok`; measure cold-start time; note it in the README.
+## Next step
+1. Owner tests the live screen with a real camera in Chrome (local). Check the FPS with
+   `VITE_FACE_DETECT_EVERY_N_FRAMES=1`; if it is below ~20, set N to 2-3 (ADR-011).
+2. P1.5 / P4: deploy with `docs/deploy.md` (owner sets `DATABASE_URL` on Render).
+3. P5 History screen (reuses `LiveChart` for the full session).

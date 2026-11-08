@@ -14,6 +14,8 @@ export interface AppConfig {
   analysisHeight: number
   /** Per-request timeout; must cover a free backend's cold start. */
   apiTimeoutMs: number
+  /** Run the face detector on every Nth frame of each second (always on its first frame). */
+  faceDetectEveryNFrames: number
 }
 
 export type RawEnv = Readonly<Record<string, unknown>>
@@ -80,6 +82,7 @@ export function parseConfig(env: RawEnv): AppConfig {
     analysisWidth: readInt('VITE_ANALYSIS_WIDTH', 16, 1920),
     analysisHeight: readInt('VITE_ANALYSIS_HEIGHT', 16, 1080),
     apiTimeoutMs: readInt('VITE_API_TIMEOUT_MS', 1_000, 300_000),
+    faceDetectEveryNFrames: readInt('VITE_FACE_DETECT_EVERY_N_FRAMES', 1, 30),
   }
 
   if (problems.length > 0) throw new ConfigError(problems)

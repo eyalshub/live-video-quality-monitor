@@ -1,0 +1,372 @@
+/**
+ * Orchestrates one monitoring session in the browser:
+ * camera → frame loop → per-frame metrics + face → per-second sample → UI + outbox → backend.
+ * React subscribes through `subscribe` / `getSnapshot` (useSyncExternalStore).
+ */
+import {
+  ApiError,
+  createSession,
+  NetworkError,
+  postSamples,
+  sendSamplesKeepalive,
+  stopSession,
+  type StopResponse,
+} from '../api/client'
+import { describeCameraError, openCamera, stopStream } from '../capture/camera'
+import { type FaceDetectorHandle, loadFaceDetector } from '../capture/faceDetector'
+import { FrameAnalyzer } from '../capture/frameAnalyzer'
+import { startFrameLoop } from '../capture/frameLoop'
+import type { AppConfig } from '../config'
+import type { Sample, Thresholds } from '../metrics/verdict'
+import { SecondAggregator } from './aggregator'
+import { Outbox, type SendOutcome } from './outbox'
+
+export type Phase = 'ready' | 'starting' | 'running' | 'stopping' | 'stopped'
+export type DetectorStatus = 'loading' | 'ready' | 'failed'
+export type Summary = StopResponse['session']['summary']
+
+export interface MonitorState {
+  phase: Phase
+  detectorStatus: DetectorStatus
+  /** Something went wrong and the user should know (camera, backend, detector). */
+  error: string | null
+  /** Progress / informational text. */
+  notice: string | null
+  sessionId: string | null
+  thresholds: Thresholds | null
+  /** Every sample of the current session, in order. */
+  samples: Sample[]
+  /** Samples not yet confirmed by the backend. */
+  pending: number
+  /** Samples the backend refused (4xx); they are not resent. */
+  rejected: number
+  /** True while no frame has been processed for more than a second (camera stalled, tab hidden). */
+  noFrames: boolean
+  /** Final summary from the backend after Stop. */
+  summary: Summary | null
+  /** Stop request failed; samples are kept and Stop can be retried. */
+  stopFailed: boolean
+}
+
+const INITIAL_STATE: MonitorState = {
+  phase: 'ready',
+  detectorStatus: 'loading',
+  error: null,
+  notice: null,
+  sessionId: null,
+  thresholds: null,
+  samples: [],
+  pending: 0,
+  rejected: 0,
+  noFrames: false,
+  summary: null,
+  stopFailed: false,
+}
+
+function describeApiError(error: unknown, action: string): string {
+  if (error instanceof NetworkError) {
+    return error.timedOut
+      ? `Could not ${action}: the backend did not answer in time. It may be waking up; try again.`
+      : `Could not ${action}: the backend is unreachable. Check your connection and try again.`
+  }
+  if (error instanceof ApiError) return `Could not ${action}: ${error.message} (${error.code}).`
+  return `Could not ${action}.`
+}
+
+export class MonitorController {
+  private state: MonitorState = INITIAL_STATE
+  private readonly listeners = new Set<() => void>()
+  private readonly config: AppConfig
+
+  private detector: FaceDetectorHandle | null = null
+  private detectorLoad: Promise<void> | null = null
+
+  // Per-session resources
+  private video: HTMLVideoElement | null = null
+  private stream: MediaStream | null = null
+  private analyzer: FrameAnalyzer | null = null
+  private aggregator: SecondAggregator | null = null
+  private outbox: Outbox | null = null
+  private stopLoop: (() => void) | null = null
+  private batchTimer: ReturnType<typeof setInterval> | null = null
+  private secondTimer: ReturnType<typeof setTimeout> | null = null
+  private startMs = 0
+  private lastFrameAt = 0
+  private finalChunks: Sample[][] = []
+
+  constructor(config: AppConfig) {
+    this.config = config
+  }
+
+  // --- store interface -------------------------------------------------------------------
+
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener)
+    return () => this.listeners.delete(listener)
+  }
+
+  getSnapshot = (): MonitorState => this.state
+
+  private set(patch: Partial<MonitorState>): void {
+    this.state = { ...this.state, ...patch }
+    for (const listener of this.listeners) listener()
+  }
+
+  // --- lifecycle -------------------------------------------------------------------------
+
+  /** Load the face model once. Start stays disabled until it is ready (or shows why not). */
+  activate(): void {
+    window.addEventListener('pagehide', this.onPageHide)
+    document.addEventListener('visibilitychange', this.onVisibilityChange)
+    this.detectorLoad ??= loadFaceDetector().then(
+      (detector) => {
+        this.detector = detector
+        this.set({ detectorStatus: 'ready' })
+      },
+      (error: unknown) => {
+        console.error('Face detector failed to load', error)
+        this.set({
+          detectorStatus: 'failed',
+          error:
+            'The face detection model could not be loaded, so quality cannot be measured honestly. Reload the page to try again.',
+        })
+      },
+    )
+  }
+
+  deactivate(): void {
+    window.removeEventListener('pagehide', this.onPageHide)
+    document.removeEventListener('visibilitychange', this.onVisibilityChange)
+    if (this.state.phase === 'running') this.onPageHide() // keep what we measured
+    this.teardownCapture()
+  }
+
+  // --- start -----------------------------------------------------------------------------
+
+  async start(video: HTMLVideoElement): Promise<void> {
+    const { phase, detectorStatus } = this.state
+    if ((phase !== 'ready' && phase !== 'stopped') || detectorStatus !== 'ready') return
+
+    this.set({
+      ...INITIAL_STATE,
+      detectorStatus,
+      phase: 'starting',
+      notice: 'Opening the camera…',
+    })
+
+    // ADR-006: camera first, so a denied permission never creates an empty session.
+    let stream: MediaStream
+    try {
+      stream = await openCamera()
+    } catch (error) {
+      this.set({ phase: 'ready', notice: null, error: describeCameraError(error).message })
+      return
+    }
+    this.stream = stream
+    this.video = video
+    video.srcObject = stream
+    try {
+      await video.play()
+    } catch {
+      // Autoplay of a muted inline video is allowed; frames will arrive anyway.
+    }
+    for (const track of stream.getVideoTracks()) {
+      track.addEventListener('ended', this.onTrackEnded)
+    }
+
+    this.set({ notice: 'Creating the session… (a sleeping backend can take up to a minute)' })
+    let created
+    try {
+      created = await createSession(this.config)
+    } catch (error) {
+      this.teardownCapture()
+      this.set({ phase: 'ready', notice: null, error: describeApiError(error, 'start a session') })
+      return
+    }
+    if (this.stream !== stream) return // stopped / unmounted while waiting
+
+    this.analyzer = new FrameAnalyzer(this.config.analysisWidth, this.config.analysisHeight)
+    this.startMs = performance.now() // t = 0
+    this.aggregator = new SecondAggregator(this.startMs, created.thresholds)
+    this.outbox = new Outbox(created.max_samples_per_batch)
+    this.lastFrameAt = performance.now()
+    this.stopLoop = startFrameLoop(video, this.onFrame)
+    this.batchTimer = setInterval(() => void this.flushOutbox(), this.config.sampleBatchIntervalMs)
+    this.scheduleSecondBoundary()
+
+    this.set({
+      phase: 'running',
+      notice: null,
+      sessionId: created.id,
+      thresholds: created.thresholds,
+    })
+  }
+
+  // --- per frame -------------------------------------------------------------------------
+
+  private onFrame = (nowMs: number): void => {
+    const { analyzer, aggregator, detector, video } = this
+    if (!analyzer || !aggregator || !detector || !video) return
+
+    let metrics
+    try {
+      metrics = analyzer.analyze(video)
+    } catch (error) {
+      console.warn('Frame skipped: could not read pixels', error)
+      return // not processed → not counted in FPS
+    }
+
+    // Face: every Nth frame of the second, and always its first frame (ADR-011).
+    let face: boolean | null = null
+    if (aggregator.framesInSecondOf(nowMs) % this.config.faceDetectEveryNFrames === 0) {
+      try {
+        face = detector.detect(video, nowMs)
+      } catch (error) {
+        console.warn('Face detection failed on a frame', error)
+      }
+    }
+
+    this.lastFrameAt = nowMs
+    for (const sample of aggregator.addFrame({ timeMs: nowMs, ...metrics, face })) {
+      this.emit(sample)
+    }
+    if (this.state.noFrames) this.set({ noFrames: false })
+  }
+
+  /** Close each second on time even if frames stop arriving, and notice when they do. */
+  private scheduleSecondBoundary(): void {
+    const aggregator = this.aggregator
+    if (!aggregator) return
+    const now = performance.now()
+    const nextBoundary = this.startMs + (aggregator.secondOf(now) + 1) * 1000 - now
+    this.secondTimer = setTimeout(
+      () => {
+        const at = performance.now()
+        for (const sample of aggregator.flushCompleted(at)) this.emit(sample)
+        const stalled = at - this.lastFrameAt > 1000
+        if (stalled !== this.state.noFrames) this.set({ noFrames: stalled })
+        this.scheduleSecondBoundary()
+      },
+      Math.max(0, nextBoundary) + 1,
+    )
+  }
+
+  private emit(sample: Sample): void {
+    this.outbox?.add(sample)
+    this.set({
+      samples: [...this.state.samples, sample],
+      pending: this.outbox?.pendingCount ?? 0,
+    })
+  }
+
+  // --- sending ---------------------------------------------------------------------------
+
+  private sendBatch = async (samples: Sample[]): Promise<SendOutcome> => {
+    const sessionId = this.state.sessionId
+    if (!sessionId) return 'retry'
+    try {
+      await postSamples(this.config, sessionId, samples)
+      return 'ok'
+    } catch (error) {
+      if (error instanceof ApiError && !error.retryable) {
+        console.error('Backend rejected samples', error)
+        return 'reject'
+      }
+      return 'retry'
+    }
+  }
+
+  private async flushOutbox(): Promise<void> {
+    const outbox = this.outbox
+    if (!outbox) return
+    const outcome = await outbox.flush(this.sendBatch)
+    if (outbox !== this.outbox) return
+    this.set({
+      pending: outbox.pendingCount,
+      rejected: outbox.rejected,
+      notice:
+        outcome === 'retry'
+          ? 'Connection problem: samples are kept and will be sent again.'
+          : outcome === 'ok'
+            ? null
+            : this.state.notice,
+    })
+  }
+
+  // --- stop ------------------------------------------------------------------------------
+
+  async stop(reason?: string): Promise<void> {
+    if (this.state.phase !== 'running') return
+    this.set({ phase: 'stopping', notice: 'Ending the session…', error: reason ?? null })
+    this.aggregator?.discardPartial() // partial last second would under-report FPS
+    this.finalChunks = this.outbox?.drainAll() ?? []
+    this.teardownCapture()
+    await this.sendStop()
+  }
+
+  /** ADR-004: the whole outbox (incl. in-flight samples) goes with Stop. Retried on failure. */
+  async sendStop(): Promise<void> {
+    const sessionId = this.state.sessionId
+    if (!sessionId) return
+    this.set({ phase: 'stopping', stopFailed: false })
+    const chunks = this.finalChunks
+    try {
+      for (const chunk of chunks.slice(0, -1)) {
+        await postSamples(this.config, sessionId, chunk)
+      }
+      const response = await stopSession(this.config, sessionId, chunks.at(-1) ?? [])
+      this.finalChunks = []
+      this.set({
+        phase: 'stopped',
+        pending: 0,
+        notice: null,
+        summary: response.session.summary,
+      })
+    } catch (error) {
+      this.set({
+        stopFailed: true,
+        pending: chunks.reduce((sum, chunk) => sum + chunk.length, 0),
+        notice: null,
+        error: describeApiError(error, 'end the session'),
+      })
+    }
+  }
+
+  // --- page / camera events --------------------------------------------------------------
+
+  private onTrackEnded = (): void => {
+    void this.stop('The camera was disconnected.')
+  }
+
+  private onVisibilityChange = (): void => {
+    // Frames stop while hidden; the first frame back must not be compared to a stale one.
+    this.analyzer?.resetMotionReference()
+  }
+
+  /** Tab closing without Stop: send what we have with keepalive. The session ends at its last
+   * stored sample. */
+  private onPageHide = (): void => {
+    const sessionId = this.state.sessionId
+    if (this.state.phase !== 'running' || !sessionId || !this.outbox) return
+    for (const chunk of this.outbox.snapshotChunks()) {
+      sendSamplesKeepalive(this.config, sessionId, chunk)
+    }
+  }
+
+  private teardownCapture(): void {
+    this.stopLoop?.()
+    this.stopLoop = null
+    if (this.batchTimer !== null) clearInterval(this.batchTimer)
+    if (this.secondTimer !== null) clearTimeout(this.secondTimer)
+    this.batchTimer = null
+    this.secondTimer = null
+    for (const track of this.stream?.getVideoTracks() ?? []) {
+      track.removeEventListener('ended', this.onTrackEnded)
+    }
+    stopStream(this.stream) // releases the camera
+    this.stream = null
+    if (this.video) this.video.srcObject = null
+    this.video = null
+    this.analyzer = null
+  }
+}
