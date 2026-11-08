@@ -33,6 +33,8 @@ Camera, metrics, chart, outbox, history UI, deployment configs.
   production build did not contain the new variable and the site showed "not configured". Re-apply
   with `git revert bb556c6` once the variable is in Vercel's Production build.
 - 2026-11-08 — README final. Checks: backend 162 tests, frontend 188 tests, CI green.
+- 2026-11-08 — Face confidence change re-applied (`9c8b354`) after the 5 variables were added in
+  Vercel; the deployed bundle contains all 11 `VITE_*` values. Frontend 193 tests, CI green.
 
 ## Known notes
 - Windows Application Control may block `.venv/Scripts/*.exe` shims → use `uv run python -m <tool>`.
@@ -47,10 +49,7 @@ Camera, metrics, chart, outbox, history UI, deployment configs.
   lock (`SELECT … FOR UPDATE`) serializes them; behavior before/after Stop is tested. Decided
   2026-11-08: the lock is enough for now.
 - Extra-insight limits (50 / 5 / 20 / 20) are first guesses; calibrate them on a real camera.
-- The extra-insight variables are not in Vercel's production build yet (panel off in production).
 
 ## Next step
-1. Owner: make the 5 `VITE_*` variables (face confidence + 4 insights) part of Vercel's
-   **Production** build, then `git revert bb556c6`, push, and verify the bundle and the panel.
-2. Calibrate the extra-insight limits on a real camera.
-3. Demo rehearsal on the public URL (wake the backend first).
+1. Calibrate the extra-insight limits on a real camera (raw values are shown in the panel).
+2. Demo rehearsal on the public URL (wake the backend first).

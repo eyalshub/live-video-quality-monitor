@@ -126,7 +126,7 @@ All cases: [`docs/edge-cases.md`](docs/edge-cases.md).
 ## Known debt / not finished
 
 - No automated browser (camera) test in CI. A headless-Chrome run with a fake camera was done
-  locally; unit and component tests run in CI (backend 162, frontend 188).
+  locally; unit and component tests run in CI (backend 162, frontend 193).
 - No concurrent race test for Stop vs. an in-flight samples request. A row lock serializes them.
 - Extra-insight limits are first guesses, not yet calibrated on a real camera. The panel shows the
   raw values for that.
