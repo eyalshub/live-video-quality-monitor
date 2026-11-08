@@ -27,6 +27,8 @@ A Python backend stores each session's per-second samples in Postgres; a History
 | `docs/data-model.md` | Tables, constraints, verdict rule, summary. |
 | `docs/edge-cases.md` | Every edge case and the chosen behavior. |
 | `docs/decisions/` | ADRs — why things are the way they are. |
+| `docs/deploy.md` | Render + Vercel + Neon: env vars per service and exact steps. |
+| `render.yaml` | Render Blueprint for the backend (free, Frankfurt). |
 | `docs/progress.md` | Roadmap, status, next step. |
 | `docker-compose.yml` | Local Postgres 16 (+ `vqm_test` DB for tests). |
 | `.github/workflows/ci.yml` | Lint, type-check, migrate, test, build. |

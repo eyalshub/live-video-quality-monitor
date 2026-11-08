@@ -1,0 +1,37 @@
+# Render Blueprint for the backend (free tier, no credit card). See docs/deploy.md.
+# Secrets and deployment-specific values use `sync: false`: Render asks for them in the dashboard
+# and they are never stored in this file.
+services:
+  - type: web
+    name: vqm-backend
+    runtime: python
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    # Migrations run on every start (idempotent), then the app factory serves on Render's $PORT.
+    startCommand: >-
+      uv run --no-sync python -m alembic upgrade head &&
+      uv run --no-sync python -m uvicorn app.main:create_app --factory
+      --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*'
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.10"
+      - key: DATABASE_URL # Neon connection string (set by the owner in the dashboard)
+        sync: false
+      - key: CORS_ORIGINS # the Vercel production URL, e.g. https://<project>.vercel.app
+        sync: false
+      - key: THRESHOLD_FPS_MIN
+        value: "15"
+      - key: THRESHOLD_BRIGHTNESS_MIN
+        value: "60"
+      - key: THRESHOLD_BRIGHTNESS_MAX
+        value: "200"
+      - key: THRESHOLD_MOTION_MAX
+        value: "20"
+      - key: MAX_SAMPLES_PER_BATCH
+        value: "120"
+      - key: LOG_LEVEL
+        value: INFO

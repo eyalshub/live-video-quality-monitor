@@ -29,3 +29,6 @@ coverage/
 .idea/
 .DS_Store
 Thumbs.db
+
+# --- Deploy tooling ---
+.vercel/

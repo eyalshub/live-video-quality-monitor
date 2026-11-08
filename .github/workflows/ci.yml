@@ -45,9 +45,9 @@ jobs:
       MAX_SAMPLES_PER_BATCH: "120"
       LOG_LEVEL: INFO
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10
         with:
           enable-cache: true
           cache-dependency-glob: backend/uv.lock
@@ -91,9 +91,9 @@ jobs:
       VITE_ANALYSIS_HEIGHT: "120"
       VITE_API_TIMEOUT_MS: "70000"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
