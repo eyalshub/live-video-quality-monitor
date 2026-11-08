@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (ruff, mypy, migrations, pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vqm
+          POSTGRES_PASSWORD: vqm
+          POSTGRES_DB: vqm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vqm -d vqm"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # CI-only values for a throwaway database; not secrets.
+      DATABASE_URL: postgresql+psycopg://vqm:vqm@localhost:5432/vqm
+      TEST_DATABASE_URL: postgresql+psycopg://vqm:vqm@localhost:5432/vqm_test
+      CORS_ORIGINS: http://localhost:5173
+      THRESHOLD_FPS_MIN: "15"
+      THRESHOLD_BRIGHTNESS_MIN: "60"
+      THRESHOLD_BRIGHTNESS_MAX: "200"
+      THRESHOLD_MOTION_MAX: "20"
+      MAX_SAMPLES_PER_BATCH: "120"
+      LOG_LEVEL: INFO
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format
+        run: uv run ruff format --check .
+
+      - name: Type-check
+        run: uv run mypy
+
+      - name: Create test database
+        run: psql -h localhost -U vqm -d vqm -c "CREATE DATABASE vqm_test"
+        env:
+          PGPASSWORD: vqm
+
+      - name: Migrate empty database
+        run: uv run alembic upgrade head
+
+      - name: Models match migrations
+        run: uv run alembic check
+
+      - name: Test
+        run: uv run pytest -q
+
+  frontend:
+    name: Frontend (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      VITE_API_BASE_URL: http://localhost:8000
+      VITE_SAMPLE_BATCH_INTERVAL_MS: "1500"
+      VITE_ANALYSIS_WIDTH: "160"
+      VITE_ANALYSIS_HEIGHT: "120"
+      VITE_API_TIMEOUT_MS: "70000"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
