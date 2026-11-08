@@ -232,14 +232,32 @@ button:disabled {
   stroke-opacity: 0.4;
 }
 
-.chart__label {
+.chart__title {
   font-size: 12px;
+  font-weight: 600;
   fill: currentColor;
 }
 
 .chart__tick {
   font-size: 10px;
   fill: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__dot {
+  stroke: none;
+}
+
+.chart__dot.line--fps {
+  fill: #0969da;
+}
+
+.chart__dot.line--brightness {
+  fill: #bf8700;
+}
+
+.chart__dot.line--motion {
+  fill: #8250df;
 }
 
 .chart__threshold {

@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 
 import type { AppConfig } from '../config'
-import { LiveChart } from './LiveChart'
+import { QualityChart } from './QualityChart'
 import { MetricCards, VerdictBanner } from './LiveStatus'
 import { useMonitor } from './useMonitor'
 
@@ -98,7 +98,7 @@ export function LiveMonitor({ config }: { config: AppConfig }) {
       </div>
 
       {thresholds && samples.length > 0 && (
-        <LiveChart samples={samples} thresholds={thresholds} fromT={fromT} toT={toT} />
+        <QualityChart samples={samples} thresholds={thresholds} fromT={fromT} toT={toT} />
       )}
     </section>
   )
