@@ -17,6 +17,7 @@ const CONFIG: AppConfig = {
   analysisHeight: 120,
   apiTimeoutMs: 1000,
   faceDetectEveryNFrames: 1,
+  faceMinConfidence: 0.5,
   insights: { sharpnessMin: 50, clipPctMax: 5, faceMinWidthPct: 20, faceMaxOffsetPct: 20 },
 }
 

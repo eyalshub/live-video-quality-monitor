@@ -9,6 +9,7 @@ const VALID = {
   VITE_ANALYSIS_HEIGHT: '120',
   VITE_API_TIMEOUT_MS: '70000',
   VITE_FACE_DETECT_EVERY_N_FRAMES: '1',
+  VITE_FACE_MIN_CONFIDENCE: '0.5',
   VITE_SHARPNESS_MIN: '50',
   VITE_CLIP_PCT_MAX: '5',
   VITE_FACE_MIN_WIDTH_PCT: '20',
@@ -34,6 +35,7 @@ describe('parseConfig', () => {
       analysisHeight: 120,
       apiTimeoutMs: 70000,
       faceDetectEveryNFrames: 1,
+      faceMinConfidence: 0.5,
       insights: { sharpnessMin: 50, clipPctMax: 5, faceMinWidthPct: 20, faceMaxOffsetPct: 20 },
     })
   })
@@ -62,7 +64,13 @@ describe('parseConfig', () => {
 
   it('reports every missing required variable at once', () => {
     const problems = problemsFor({})
-    const required = Object.keys(VALID).filter((name) => !/SHARPNESS|CLIP|FACE_M/.test(name))
+    const optional = [
+      'VITE_SHARPNESS_MIN',
+      'VITE_CLIP_PCT_MAX',
+      'VITE_FACE_MIN_WIDTH_PCT',
+      'VITE_FACE_MAX_OFFSET_PCT',
+    ]
+    const required = Object.keys(VALID).filter((name) => !optional.includes(name))
     expect(problems).toHaveLength(required.length)
     for (const name of required) {
       expect(problems).toContain(`${name} is missing`)
@@ -85,6 +93,11 @@ describe('parseConfig', () => {
     ['VITE_ANALYSIS_HEIGHT', '-120'],
     ['VITE_API_TIMEOUT_MS', '999999999'],
     ['VITE_FACE_DETECT_EVERY_N_FRAMES', '0'],
+    ['VITE_FACE_MIN_CONFIDENCE', '0'],
+    ['VITE_FACE_MIN_CONFIDENCE', '1'],
+    ['VITE_FACE_MIN_CONFIDENCE', '1.5'],
+    ['VITE_FACE_MIN_CONFIDENCE', '-0.2'],
+    ['VITE_FACE_MIN_CONFIDENCE', 'high'],
     ['VITE_CLIP_PCT_MAX', '101'],
     ['VITE_FACE_MAX_OFFSET_PCT', '51'],
   ])('rejects %s=%s', (name, value) => {
