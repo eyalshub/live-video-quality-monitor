@@ -23,14 +23,16 @@ services:
         sync: false
       - key: CORS_ORIGINS # the Vercel production URL, e.g. https://<project>.vercel.app
         sync: false
+      # Verdict thresholds, calibrated on a real laptop webcam (ADR-012). Change them here, not in
+      # the dashboard: the Blueprint owns them. Old sessions keep their snapshot (ADR-002).
       - key: THRESHOLD_FPS_MIN
         value: "15"
       - key: THRESHOLD_BRIGHTNESS_MIN
-        value: "60"
+        value: "80"
       - key: THRESHOLD_BRIGHTNESS_MAX
         value: "200"
       - key: THRESHOLD_MOTION_MAX
-        value: "20"
+        value: "12"
       - key: MAX_SAMPLES_PER_BATCH
         value: "120"
       - key: LOG_LEVEL

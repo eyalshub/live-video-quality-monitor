@@ -18,11 +18,11 @@ The assignment, restated in our own words as a checklist. `Phase` = where it is 
       that sample feeds the chart and is sent to the backend. *(P2)*
 
 ### Metrics (per second)
-| Metric | Definition | Default warning |
+| Metric | Definition | Task's suggested warning (ours: ADR-012) |
 |---|---|---|
 | FPS | Number of frames our code actually processed in that second | < 15 → `low_fps` |
-| Brightness | Mean luma `0.299R + 0.587G + 0.114B` over all pixels, 0–255 | < 60 → `too_dark`, > 200 → `too_bright` |
-| Motion | Mean absolute luma difference vs. the previous frame, 0–255 | > 20 → `hold_still` |
+| Brightness | Mean luma `0.299R + 0.587G + 0.114B` over all pixels, 0–255 | < 60 → `too_dark`, > 200 → `too_bright` (ours: < 80, > 200) |
+| Motion | Mean absolute luma difference vs. the previous frame, 0–255 | > 20 → `hold_still` (ours: > 12) |
 | Face | At least one face detected (detection only, e.g. MediaPipe) | no face in **any** frame of the second → `no_face` |
 
 - [ ] Thresholds are configurable; the values used are listed in the README. *(P0 config, P6 README)*

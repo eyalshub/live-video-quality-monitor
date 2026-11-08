@@ -37,7 +37,7 @@ Requests are all-or-nothing: if any sample is invalid, nothing from that request
 Request: no body (a body is ignored; clients cannot choose thresholds). Response 201:
 ```json
 { "id": "uuid", "started_at": "2026-11-08T12:00:00Z",
-  "thresholds": { "fps_min": 15, "brightness_min": 60, "brightness_max": 200, "motion_max": 20 },
+  "thresholds": { "fps_min": 15, "brightness_min": 80, "brightness_max": 200, "motion_max": 12 },
   "max_samples_per_batch": 120 }
 ```
 `max_samples_per_batch` lets the client split a large outbox (after a long network drop) into

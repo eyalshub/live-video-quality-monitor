@@ -25,6 +25,8 @@ Phase = where the behavior is implemented. Every case has (or will have) a test 
 | Hidden tab (frames stop) | Gap in the timeline; no invented samples. Motion reference is reset after the gap. | P2/P3 |
 | A second with zero frames | No sample; UI says "no frames received". | P2/P3 |
 | No face | Shown as "No face", verdict Poor `no_face`. Never a fake value. | P3 |
+| Partly covered face (hand, edge of frame) | May still count as a face: the check is detection only, by design (iron rule 5). | P2 |
+| Low light | The camera lengthens its exposure and lowers its own frame rate (e.g. ~9 FPS in a dark room), so `low_fps` shows up together with dark images. It is real and reported honestly, not a bug in our FPS counter. Camera auto-gain also keeps a dark room around 79 brightness, which is why the minimum is 80 (ADR-012). | P2 |
 
 ## Session lifecycle & idempotency
 | Case | Behavior | Phase |

@@ -14,9 +14,9 @@ backend's CORS needs the frontend URL.
 | `DATABASE_URL` | Neon **direct** connection string (host without `-pooler`, `postgresql://…?sslmode=require`). The app switches it to psycopg 3 automatically. | Render dashboard only (`sync: false`). **Never in a file.** |
 | `CORS_ORIGINS` | The Vercel production URL, e.g. `https://live-video-quality-monitor.vercel.app` (no trailing slash; comma-separate several) | Render dashboard (`sync: false`) |
 | `THRESHOLD_FPS_MIN` | `15` | `render.yaml` |
-| `THRESHOLD_BRIGHTNESS_MIN` | `60` | `render.yaml` |
+| `THRESHOLD_BRIGHTNESS_MIN` | `80` (ADR-012) | `render.yaml` |
 | `THRESHOLD_BRIGHTNESS_MAX` | `200` | `render.yaml` |
-| `THRESHOLD_MOTION_MAX` | `20` | `render.yaml` |
+| `THRESHOLD_MOTION_MAX` | `12` (ADR-012) | `render.yaml` |
 | `MAX_SAMPLES_PER_BATCH` | `120` | `render.yaml` |
 | `LOG_LEVEL` | `INFO` | `render.yaml` |
 | `PYTHON_VERSION` | `3.12.10` (Render's runtime selector) | `render.yaml` |

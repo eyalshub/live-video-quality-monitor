@@ -55,13 +55,14 @@ Why these choices: [`docs/decisions/`](docs/decisions/).
 ## Thresholds used
 
 Configured in the backend environment only ([ADR-002](docs/decisions/ADR-002-thresholds-owned-by-backend.md)),
-returned to the browser when a session starts, and stored with each session.
+returned to the browser when a session starts, and stored with each session. Brightness min and
+motion max were calibrated on a real laptop webcam ([ADR-012](docs/decisions/ADR-012-thresholds-calibrated-on-a-real-webcam.md)).
 
 | Metric | Poor when | Reason shown |
 |---|---|---|
 | Face | no face in any frame of that second | No face |
-| Brightness | < 60 / > 200 (mean luma, 0–255) | Too dark / Too bright |
-| Motion | > 20 (mean abs. luma change between frames, 0–255) | Hold still |
+| Brightness | < 80 / > 200 (mean luma, 0–255) | Too dark / Too bright |
+| Motion | > 12 (mean abs. luma change between frames, 0–255) | Hold still |
 | FPS | < 15 (frames actually processed in that second) | Low FPS |
 
 When several fail, the first in this order is reported: no face → too dark / too bright → hold
