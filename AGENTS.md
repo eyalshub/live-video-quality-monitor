@@ -37,11 +37,11 @@ docker compose up -d                                   # Postgres on :5432
 cd backend
 cp .env.example .env                                   # once
 uv sync
-uv run alembic upgrade head
-uv run uvicorn app.main:app --reload --port 8000
-uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest -q
+uv run python -m alembic upgrade head
+uv run python -m uvicorn app.main:create_app --factory --reload --port 8000
+uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run python -m pytest -q
 
-cd frontend
+cd ../frontend
 cp .env.example .env                                   # once
 npm install
 npm run dev                                            # http://localhost:5173
