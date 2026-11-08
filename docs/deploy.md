@@ -11,7 +11,7 @@ backend's CORS needs the frontend URL.
 ### Backend (Render → service `vqm-backend` → Environment)
 | Variable | Value | Where it is set |
 |---|---|---|
-| `DATABASE_URL` | Neon connection string (`postgresql://…?sslmode=require`). The app switches it to psycopg 3 automatically. | Render dashboard only (`sync: false`). **Never in a file.** |
+| `DATABASE_URL` | Neon **direct** connection string (host without `-pooler`, `postgresql://…?sslmode=require`). The app switches it to psycopg 3 automatically. | Render dashboard only (`sync: false`). **Never in a file.** |
 | `CORS_ORIGINS` | The Vercel production URL, e.g. `https://live-video-quality-monitor.vercel.app` (no trailing slash; comma-separate several) | Render dashboard (`sync: false`) |
 | `THRESHOLD_FPS_MIN` | `15` | `render.yaml` |
 | `THRESHOLD_BRIGHTNESS_MIN` | `60` | `render.yaml` |
@@ -38,8 +38,11 @@ backend's CORS needs the frontend URL.
 ## Steps
 
 ### 1. Database (Neon), done by the owner
-Project on Postgres 16 in Frankfurt. Copy the **pooled** connection string. It goes straight into
-Render (step 2) and nowhere else.
+Project on Postgres 16 in Frankfurt. Copy the **direct** connection string (host **without**
+`-pooler`), not the pooled one: Alembic migrations and psycopg 3 use session-level features that a
+transaction-mode pooler (PgBouncer) does not support. The app keeps its own small connection pool
+(`pool_pre_ping`), so Neon's pooler is not needed. The string goes straight into Render (step 2)
+and nowhere else.
 
 ### 2. Backend (Render)
 1. Render dashboard → **New → Blueprint** → connect `eyalshub/live-video-quality-monitor`.
