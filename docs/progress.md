@@ -50,6 +50,12 @@ or for the camera constraints in `openCamera`.
   high (one session, not changed yet). Face: stability filter live (5 runs, IoU 0.3, ADR-017):
   false faces 62 % → 18 % on the same validation frames; far faces (1.5–2 m) missed 5 % → 29 %.
   Geometry and size filters rejected. Results in README "Measurement and calibration".
+- 2026-11-09 — Deployed `d1c5d75` after adding `VITE_FACE_STABLE_FRAMES=5` and
+  `VITE_FACE_STABLE_IOU=0.3` in Vercel. Verified live: bundle contains both values, `/health` →
+  `{"status":"ok","db":"ok"}`, body guard on Render answers 413 for a 3 MB body, app loads.
+- 2026-11-09 — `VITE_API_TIMEOUT_MS` 70000 → 120000 (a 66 s Render wake-up was measured; 70 s left
+  no margin). Vercel no longer accepts `VITE_*` as Secret, so it was re-created as Config; the
+  redeployed bundle contains `120000`.
 
 ## Known notes
 - Windows Application Control may block `.venv/Scripts/*.exe` shims → use `uv run python -m <tool>`.
@@ -66,8 +72,6 @@ or for the camera constraints in `openCamera`.
 - Extra-insight limits (50 / 5 / 20 / 20) are first guesses; calibrate them on a real camera.
 
 ## Next step
-1. Deploy: add `VITE_FACE_STABLE_FRAMES=5` and `VITE_FACE_STABLE_IOU=0.3` in Vercel (Production)
-   **before** pushing, then push and check the deployed bundle contains them.
-2. Optional: record 2–3 more moving-head sessions (gentle and strong) to decide motion max.
-3. Calibrate the extra-insight limits on a real camera (raw values are shown in the panel).
-4. Demo rehearsal on the public URL (wake the backend first).
+1. Optional: record 2–3 more moving-head sessions (gentle and strong) to decide motion max.
+2. Calibrate the extra-insight limits on a real camera (raw values are shown in the panel).
+3. Demo rehearsal on the public URL (wake the backend first).

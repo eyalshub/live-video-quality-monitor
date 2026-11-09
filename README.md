@@ -12,7 +12,7 @@ History screen replays any session. **Video never leaves the browser**: only num
 | **Repository** | https://github.com/eyalshub/live-video-quality-monitor |
 
 > **Cold start:** the free Render backend sleeps after ~15 min idle. The first request can take
-> **up to ~1 minute**; the page says the backend may be waking up and waits (70 s timeout).
+> **up to ~1 minute**; the page says the backend may be waking up and waits (120 s timeout; a wake-up of 66 s was measured).
 > Open the app (or `/health`) once before a demo.
 
 ## Run locally

@@ -30,7 +30,7 @@ backend's CORS needs the frontend URL.
 | `VITE_SAMPLE_BATCH_INTERVAL_MS` | `1500` |
 | `VITE_ANALYSIS_WIDTH` | `160` |
 | `VITE_ANALYSIS_HEIGHT` | `120` |
-| `VITE_API_TIMEOUT_MS` | `70000` |
+| `VITE_API_TIMEOUT_MS` | `120000` |
 | `VITE_FACE_DETECT_EVERY_N_FRAMES` | `1` (see [ADR-011](decisions/ADR-011-face-detection-cadence.md)) |
 | `VITE_FACE_MIN_CONFIDENCE` | `0.5`: face detector minimum confidence, 0 < x < 1 (required; ADR-011) |
 | `VITE_FACE_STABLE_FRAMES` | `5`: a face must hold still this many detector runs; 1 = off (required; ADR-017) |
@@ -76,7 +76,7 @@ cannot call the API. That is intentional: only the production frontend is allowe
 
 ## Cold start
 Render's free web service sleeps after ~15 minutes without traffic. The first request then takes up
-to about a minute. The frontend waits up to `VITE_API_TIMEOUT_MS` (70 s) and says that the backend
+to about a minute. The frontend waits up to `VITE_API_TIMEOUT_MS` (120 s) and says that the backend
 may be waking up. Before a demo, open `/health` once to wake it.
 
 ## Troubleshooting
