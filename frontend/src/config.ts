@@ -21,6 +21,12 @@ export interface AppConfig {
   /** Face detector's minimum detection confidence, 0 < x < 1 (MediaPipe minDetectionConfidence). */
   faceMinConfidence: number
   /**
+   * A face counts only if it stays in about the same place (IoU ≥ faceStableIou) for this many
+   * detector runs in a row; 1 = off (ADR-017).
+   */
+  faceStableFrames: number
+  faceStableIou: number
+  /**
    * Extra insights (ADR-013): informational limits, never part of the verdict. Optional as a
    * group: null when none of the four variables is set (the panel is then off). Setting only some
    * of them is a configuration error.
@@ -138,6 +144,8 @@ export function parseConfig(env: RawEnv): AppConfig {
     apiTimeoutMs: readInt('VITE_API_TIMEOUT_MS', 1_000, 300_000),
     faceDetectEveryNFrames: readInt('VITE_FACE_DETECT_EVERY_N_FRAMES', 1, 30),
     faceMinConfidence: readFraction('VITE_FACE_MIN_CONFIDENCE', 0, 1),
+    faceStableFrames: readInt('VITE_FACE_STABLE_FRAMES', 1, 30),
+    faceStableIou: readFraction('VITE_FACE_STABLE_IOU', 0, 1),
     insights: readInsights(),
   }
 

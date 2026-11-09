@@ -33,6 +33,8 @@ backend's CORS needs the frontend URL.
 | `VITE_API_TIMEOUT_MS` | `70000` |
 | `VITE_FACE_DETECT_EVERY_N_FRAMES` | `1` (see [ADR-011](decisions/ADR-011-face-detection-cadence.md)) |
 | `VITE_FACE_MIN_CONFIDENCE` | `0.5`: face detector minimum confidence, 0 < x < 1 (required; ADR-011) |
+| `VITE_FACE_STABLE_FRAMES` | `5`: a face must hold still this many detector runs; 1 = off (required; ADR-017) |
+| `VITE_FACE_STABLE_IOU` | `0.3`: box overlap for "same place", 0 < x < 1 (required; ADR-017) |
 | `VITE_SHARPNESS_MIN` | `50`: extra insight, informational. The four insight variables are optional as a group: none set → panel off; some set → error ([ADR-013](decisions/ADR-013-extra-insights-client-only.md)) |
 | `VITE_CLIP_PCT_MAX` | `5`: extra insight, informational |
 | `VITE_FACE_MIN_WIDTH_PCT` | `20`: extra insight, informational |

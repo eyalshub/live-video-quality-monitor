@@ -14,6 +14,8 @@ const CONFIG: AppConfig = {
   apiTimeoutMs: 1000,
   faceDetectEveryNFrames: 1,
   faceMinConfidence: 0.5,
+  faceStableFrames: 5,
+  faceStableIou: 0.3,
   insights: { sharpnessMin: 50, clipPctMax: 5, faceMinWidthPct: 20, faceMaxOffsetPct: 20 },
 }
 const THRESHOLDS = { fps_min: 15, brightness_min: 60, brightness_max: 200, motion_max: 20 }

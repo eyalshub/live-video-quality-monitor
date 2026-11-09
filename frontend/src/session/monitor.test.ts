@@ -33,6 +33,8 @@ const CONFIG: AppConfig = {
   apiTimeoutMs: 1000,
   faceDetectEveryNFrames: 1,
   faceMinConfidence: 0.5,
+  faceStableFrames: 5,
+  faceStableIou: 0.3,
   insights: null,
 }
 

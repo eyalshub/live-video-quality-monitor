@@ -10,6 +10,8 @@ const VALID = {
   VITE_API_TIMEOUT_MS: '70000',
   VITE_FACE_DETECT_EVERY_N_FRAMES: '1',
   VITE_FACE_MIN_CONFIDENCE: '0.5',
+  VITE_FACE_STABLE_FRAMES: '5',
+  VITE_FACE_STABLE_IOU: '0.3',
   VITE_SHARPNESS_MIN: '50',
   VITE_CLIP_PCT_MAX: '5',
   VITE_FACE_MIN_WIDTH_PCT: '20',
@@ -36,6 +38,8 @@ describe('parseConfig', () => {
       apiTimeoutMs: 70000,
       faceDetectEveryNFrames: 1,
       faceMinConfidence: 0.5,
+      faceStableFrames: 5,
+      faceStableIou: 0.3,
       insights: { sharpnessMin: 50, clipPctMax: 5, faceMinWidthPct: 20, faceMaxOffsetPct: 20 },
     })
   })

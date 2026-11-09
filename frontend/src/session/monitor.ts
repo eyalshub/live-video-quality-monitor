@@ -14,12 +14,12 @@ import {
 } from '../api/client'
 import { describeCameraError, openCamera, stopStream } from '../capture/camera'
 import { type FaceDetectorHandle, loadFaceDetector } from '../capture/faceDetector'
-import type { FaceCandidate } from '../metrics/faceFilter'
+import { type FaceCandidate, filterFrame, TemporalFilter } from '../metrics/faceFilter'
 import { FrameAnalyzer } from '../capture/frameAnalyzer'
 import { startFrameLoop } from '../capture/frameLoop'
 import type { AppConfig } from '../config'
 import type { Sample, Thresholds } from '../metrics/verdict'
-import { type Framing, type InsightSample, measureFraming } from '../metrics/insights'
+import { type Framing, type InsightSample, largestBox, measureFraming } from '../metrics/insights'
 import { SecondAggregator } from './aggregator'
 import { InsightAggregator } from './insightAggregator'
 import { type FaceLog, type FaceScenario, newFaceLog } from './faceLog'
@@ -112,6 +112,8 @@ export class MonitorController {
   private faceLogScenario: FaceScenario | null = null
   private faceLog: FaceLog | null = null
   private faceFrameListener: FaceFrameListener | null = null
+  /** Per session: a face must hold still for `faceStableFrames` detector runs (ADR-017). */
+  private faceStable: TemporalFilter | null = null
 
   constructor(config: AppConfig) {
     this.config = config
@@ -218,6 +220,7 @@ export class MonitorController {
 
     this.analyzer = new FrameAnalyzer(this.config.analysisWidth, this.config.analysisHeight)
     this.startMs = performance.now() // t = 0
+    this.faceStable = new TemporalFilter(this.config.faceStableFrames, this.config.faceStableIou)
     this.faceLog = this.faceLogScenario
       ? newFaceLog(
           this.faceLogScenario,
@@ -278,13 +281,24 @@ export class MonitorController {
     if (aggregator.framesInSecondOf(nowMs) % this.config.faceDetectEveryNFrames === 0) {
       try {
         const result = detector.detect(video, nowMs)
-        face = result.present
+        // Score threshold + stability, the same filter code the offline evaluation ran (ADR-017).
+        const faces = filterFrame(
+          result.candidates,
+          video.videoWidth,
+          {
+            minScore: this.config.faceMinConfidence,
+            geometry: null,
+            sizePct: null,
+            temporal: null,
+          },
+          this.faceStable,
+        )
+        face = faces.length > 0
+        const box = largestBox(faces.map((f) => f.box))
         const t = nowMs - this.startMs
         this.faceLog?.frames.push({ t, candidates: result.candidates })
         this.faceFrameListener?.(t, result.candidates, video.videoWidth, video.videoHeight)
-        framing = result.box
-          ? measureFraming(result.box, video.videoWidth, video.videoHeight)
-          : null
+        framing = box ? measureFraming(box, video.videoWidth, video.videoHeight) : null
       } catch (error) {
         console.warn('Face detection failed on a frame', error)
       }
