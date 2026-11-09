@@ -56,6 +56,8 @@ or for the camera constraints in `openCamera`.
 - 2026-11-09 — `VITE_API_TIMEOUT_MS` 70000 → 120000 (a 66 s Render wake-up was measured; 70 s left
   no margin). Vercel no longer accepts `VITE_*` as Secret, so it was re-created as Config; the
   redeployed bundle contains `120000`.
+- 2026-11-09 — README shortened and restructured; measurement details moved to
+  `docs/measurement.md`; requirements checklist ticked (all but the demo). CI green on `392265a`.
 
 ## Known notes
 - Windows Application Control may block `.venv/Scripts/*.exe` shims → use `uv run python -m <tool>`.
@@ -72,6 +74,8 @@ or for the camera constraints in `openCamera`.
 - Extra-insight limits (50 / 5 / 20 / 20) are first guesses; calibrate them on a real camera.
 
 ## Next step
-1. Optional: record 2–3 more moving-head sessions (gentle and strong) to decide motion max.
-2. Calibrate the extra-insight limits on a real camera (raw values are shown in the panel).
-3. Demo rehearsal on the public URL (wake the backend first).
+1. Demo rehearsal on the public URL (open `/health` first to wake the backend), then
+   `git tag demo` and push the tag. No more pushes to `main` after that.
+
+Decided 2026-11-09, not doing: more moving-head sessions (motion max 12 stays, documented as a
+limitation), calibrating the extra-insight limits, committing `.claude/launch.json` (local only).
