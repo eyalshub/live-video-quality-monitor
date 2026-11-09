@@ -119,6 +119,8 @@ Every error uses one body: `{"error": {"code", "message", "details"}}`.
 | **Network drop** | Unsent samples stay in an outbox ("N samples pending") and are resent with the next batch. `(session_id, t)` is the primary key, so a resent sample is a duplicate, never a second row. |
 | **Tab closed without Stop** | On `pagehide` the outbox is sent with `fetch(…, {keepalive: true})`. The session stays open and its duration runs to its last sample (History: "In progress / ended without Stop"). |
 | **Camera denied / missing / busy** | A clear message and Start again. The camera opens **before** the session is created, so a denial never leaves an empty session ([ADR-006](docs/decisions/ADR-006-camera-first-then-session.md)). |
+| **Session duration** | `max(t) + 1`, not `t` of the last sample as the task words it: `t` starts at 0, so samples `t = 0…59` are 60 s. Seconds lost to a hidden tab still count as elapsed time; averages use stored samples only ([ADR-016](docs/decisions/ADR-016-duration-is-max-t-plus-one.md)). |
+| **Leaving during Start** | If the user leaves the live screen while the session is still being created, it is ended at once with no samples, so no session is left open. |
 | **Honest numbers** | A second with no frames produces no sample (a gap, not 0). Motion that cannot be measured is `null` ([ADR-009](docs/decisions/ADR-009-nullable-motion.md)). The partial last second at Stop is not sent. |
 
 All cases: [`docs/edge-cases.md`](docs/edge-cases.md).

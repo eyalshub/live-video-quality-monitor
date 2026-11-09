@@ -55,7 +55,8 @@ The assignment, restated in our own words as a checklist. `Phase` = where it is 
 - `t` = whole seconds since session start; `reason` = failing metric code or `null` when good.
 
 ### Summary (computed by the backend) *(P1)*
-- [ ] Duration (s) = `t` of the last sample (works without Stop).
+- [ ] Duration (s) = `t` of the last sample (works without Stop). *Ours: `t` of the last sample + 1,
+      because `t` is 0-based (ADR-016).*
 - [ ] Average FPS.
 - [ ] % of seconds with a face.
 - [ ] % of seconds with verdict Good.
