@@ -49,7 +49,7 @@ or for the camera constraints in `openCamera`.
   Brightness min 80 confirmed; brightness max 200 unreachable on this camera; motion max 12 too
   high (one session, not changed yet). Face: stability filter live (5 runs, IoU 0.3, ADR-017):
   false faces 62 % → 18 % on the same validation frames; far faces (1.5–2 m) missed 5 % → 29 %.
-  Geometry and size filters rejected. Results in README "Measurement and calibration".
+  Geometry and size filters rejected. Results in `docs/measurement.md`.
 - 2026-11-09 — Deployed `d1c5d75` after adding `VITE_FACE_STABLE_FRAMES=5` and
   `VITE_FACE_STABLE_IOU=0.3` in Vercel. Verified live: bundle contains both values, `/health` →
   `{"status":"ok","db":"ok"}`, body guard on Render answers 413 for a 3 MB body, app loads.

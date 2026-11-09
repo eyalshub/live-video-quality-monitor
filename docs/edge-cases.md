@@ -46,3 +46,4 @@ Phase = where the behavior is implemented. Every case has (or will have) a test 
 | No sessions | "No sessions yet". | P5 |
 | Session with no samples | Row shows "—"; details page says "No data recorded for this session". | P5 |
 | Thresholds changed after a session | History uses the session's snapshot thresholds (ADR-002). | P1/P5 |
+| Leaving the live screen while `POST /sessions` is in flight | The new session is ended at once with no samples, so none is left open. | P3 |
