@@ -43,8 +43,13 @@ or for the camera constraints in `openCamera`.
 - 2026-11-09 — Face false positives (ADR-015): detector reports scored candidates (floor 0.1, live
   decision unchanged), pure filters (score, geometry, size, temporal), `?debug` face-log download,
   `npm run face:eval` (ROC AUC, threshold sweep in seconds, filter comparison per scenario).
-- 2026-11-09 — Known edge case: Stop / unmount while `POST /sessions` is in flight leaves an empty,
-  open session (`monitor.ts`, the `this.stream !== stream` return after `createSession`).
+- 2026-11-09 — Fixed: leaving the live screen while `POST /sessions` is in flight now ends that
+  session at once (first `monitor.ts` unit test).
+- 2026-11-09 — Measured on a real webcam (11 sessions + 12 face logs, then 6 validation logs).
+  Brightness min 80 confirmed; brightness max 200 unreachable on this camera; motion max 12 too
+  high (one session, not changed yet). Face: stability filter live (5 runs, IoU 0.3, ADR-017):
+  false faces 62 % → 18 % on the same validation frames; far faces (1.5–2 m) missed 5 % → 29 %.
+  Geometry and size filters rejected. Results in README "Measurement and calibration".
 
 ## Known notes
 - Windows Application Control may block `.venv/Scripts/*.exe` shims → use `uv run python -m <tool>`.
@@ -61,9 +66,8 @@ or for the camera constraints in `openCamera`.
 - Extra-insight limits (50 / 5 / 20 / 20) are first guesses; calibrate them on a real camera.
 
 ## Next step
-1. Record the five labelled scenarios (ADR-014), run `tools/calibrate.py`, paste its tables into a new
-   ADR and the README; change thresholds only if the table supports it.
-2. Record face logs (`?debug`, several short logs per scenario incl. `hand`), run
-   `npm run face:eval`, and wire in only what the report supports (new ADR + `VITE_*` + Vercel).
+1. Deploy: add `VITE_FACE_STABLE_FRAMES=5` and `VITE_FACE_STABLE_IOU=0.3` in Vercel (Production)
+   **before** pushing, then push and check the deployed bundle contains them.
+2. Optional: record 2–3 more moving-head sessions (gentle and strong) to decide motion max.
 3. Calibrate the extra-insight limits on a real camera (raw values are shown in the panel).
 4. Demo rehearsal on the public URL (wake the backend first).

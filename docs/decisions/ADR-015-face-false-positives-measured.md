@@ -1,7 +1,8 @@
 # ADR-015 — Face false positives: measure per frame, filter only with evidence
 
-- **Status:** Accepted (2026-11-09). Measurement and candidate filters are built; the live decision
-  is unchanged (score ≥ `VITE_FACE_MIN_CONFIDENCE`) until the report supports a change.
+- **Status:** Accepted (2026-11-09). Measurement and candidate filters are built. Outcome of the
+  measurement: only the stability (temporal) filter went live, see ADR-017; geometry and size were
+  rejected by the data.
 
 ## Context
 A waving hand is sometimes reported as a face. The task's rule makes this worse by design: a second
