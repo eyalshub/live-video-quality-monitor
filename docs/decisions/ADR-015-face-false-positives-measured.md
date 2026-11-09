@@ -14,10 +14,11 @@ Out of scope (iron rule 5): a photo or drawing of a face *is* a face for a detec
 stated limitation, not a bug; there is no liveness or anti-spoofing.
 
 ## Decision
-1. **Candidates with scores.** The detector reports candidates down to a fixed floor of 0.1
-   (`CANDIDATE_FLOOR` in `capture/faceDetector.ts`, an algorithm constant, not a setting). Our code
-   applies `VITE_FACE_MIN_CONFIDENCE` (`metrics/faceFilter.ts`), so live behavior is the same as
-   before, and the scores below the threshold become measurable.
+1. **Candidates with scores.** Our code applies `VITE_FACE_MIN_CONFIDENCE` to the candidates
+   (`metrics/faceFilter.ts`), so the live decision is the same as before. Only with `?debug` does the
+   detector report candidates down to a fixed floor of 0.1 (`CANDIDATE_FLOOR` in
+   `capture/faceDetector.ts`, an algorithm constant, not a setting), so scores below the threshold
+   become measurable. Without `?debug` the model runs with the threshold itself, exactly as before.
 2. **Labelled face logs, client-only.** With `?debug` in the URL, a panel labels the next session
    (`face_frontal`, `face_turned`, `face_dark`, `face_far`, `hand`, `object`, `empty`). After Stop it
    downloads a JSON file of per-frame candidates (score, box, 6 keypoints). Only numbers, saved by
