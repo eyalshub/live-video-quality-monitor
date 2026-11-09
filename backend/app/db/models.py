@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from typing import get_args
 
 from sqlalchemy import (
     CheckConstraint,
@@ -17,9 +18,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-VERDICTS = ("good", "poor")
-# Order matters: it is the priority order of the verdict rule (docs/data-model.md).
-REASONS = ("no_face", "too_dark", "too_bright", "hold_still", "low_fps")
+from app.services.verdict import Reason, Verdict
+
+# Single source: the verdict rule's own types (app/services/verdict.py).
+VERDICTS: tuple[str, ...] = get_args(Verdict)
+REASONS: tuple[str, ...] = get_args(Reason)
 
 NAMING_CONVENTION = {
     "ix": "ix_%(table_name)s_%(column_0_name)s",

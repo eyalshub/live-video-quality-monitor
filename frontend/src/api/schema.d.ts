@@ -311,7 +311,7 @@ export interface components {
         Summary: {
             /**
              * Duration S
-             * @description t of the last sample
+             * @description Seconds covered: t of the last sample + 1
              */
             duration_s: number | null;
             /** Avg Fps */

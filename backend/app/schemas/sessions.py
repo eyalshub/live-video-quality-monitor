@@ -4,9 +4,11 @@ frontend types are generated from (ADR-008).
 
 import uuid
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+
+from app.services.verdict import Reason, Verdict
 
 INT32_MAX = 2_147_483_647
 
@@ -42,8 +44,8 @@ class SampleIn(BaseModel):
         description="Mean abs. luma difference vs. previous frame; null = not measurable (ADR-009)"
     )
     face: bool = Field(description="At least one frame in that second had a face")
-    verdict: Literal["good", "poor"]
-    reason: Literal["no_face", "too_dark", "too_bright", "hold_still", "low_fps"] | None
+    verdict: Verdict
+    reason: Reason | None
 
 
 class SampleOut(BaseModel):
@@ -52,8 +54,8 @@ class SampleOut(BaseModel):
     brightness: float
     motion: float | None
     face: bool
-    verdict: Literal["good", "poor"]
-    reason: Literal["no_face", "too_dark", "too_bright", "hold_still", "low_fps"] | None
+    verdict: Verdict
+    reason: Reason | None
 
 
 class SessionCreated(BaseModel):
@@ -86,7 +88,7 @@ class Summary(BaseModel):
     """Computed by the backend at read time. All fields except sample_count are null when the
     session has no samples."""
 
-    duration_s: int | None = Field(description="t of the last sample")
+    duration_s: int | None = Field(description="Seconds covered: t of the last sample + 1")
     avg_fps: float | None
     face_pct: float | None = Field(description="% of seconds with a face")
     good_pct: float | None = Field(description="% of seconds with verdict good")

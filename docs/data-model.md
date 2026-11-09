@@ -57,7 +57,7 @@ Boundaries are inclusive-OK: `brightness == brightness_min` is fine, `motion == 
 ## Summary (computed by the backend at read time, never stored)
 | Field | SQL |
 |---|---|
-| `duration_s` | `max(t)` |
+| `duration_s` | `max(t) + 1` (t is 0-based: t = 0..59 is 60 s) |
 | `avg_fps` | `avg(fps)` |
 | `face_pct` | `100.0 * avg(face::int)` |
 | `good_pct` | `100.0 * avg((verdict = 'good')::int)` |

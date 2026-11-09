@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 Verdict = Literal["good", "poor"]
+# Order matters: it is the priority order of the rule below (docs/data-model.md).
 Reason = Literal["no_face", "too_dark", "too_bright", "hold_still", "low_fps"]
 
 

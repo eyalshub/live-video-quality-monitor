@@ -53,7 +53,8 @@ export function HistoryList({ config }: { config: AppConfig }) {
 
   return (
     <section className="history">
-      <h2>History</h2>
+      {/* The active "History" nav tab is the visible title; keep the h2 for screen readers. */}
+      <h2 className="sr-only">History</h2>
       {state.status === 'loading' && <Loading what="sessions" />}
       {state.status === 'error' && <LoadError error={state.error} retry={retry} />}
       {state.status === 'success' &&
@@ -153,7 +154,7 @@ export function SessionDetails({ config, id }: { config: AppConfig; id: string }
 
   const session = state.data
   const { summary } = session
-  const lastT = summary.duration_s ?? 0
+  const lastT = session.samples.at(-1)?.t ?? 0 // samples come ordered by t
   return (
     <section className="history">
       {back}

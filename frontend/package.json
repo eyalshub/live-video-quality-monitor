@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gen:api": "node scripts/gen-api.ts",
+    "face:eval": "node scripts/face-eval.ts",
     "predev": "node scripts/copy-mediapipe.ts",
     "prebuild": "node scripts/copy-mediapipe.ts"
   },

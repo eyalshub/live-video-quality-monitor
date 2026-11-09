@@ -11,8 +11,14 @@ from app.api.sessions import router as sessions_router
 from app.core.config import Settings, get_settings
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
+from app.core.request_guard import RequestGuardMiddleware
 from app.core.request_id import REQUEST_ID_HEADER, RequestIdMiddleware
 from app.db.session import create_db_engine, create_session_factory
+
+# Body size limit, derived from MAX_SAMPLES_PER_BATCH rather than a separate setting. A sample is
+# ~120 bytes of JSON; 1 KiB each leaves room for pretty-printing without allowing abuse.
+MAX_BYTES_PER_SAMPLE = 1024
+MAX_ENVELOPE_BYTES = 1024
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -37,6 +43,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     register_error_handlers(app)
 
+    # Middleware added first is innermost. Order, outside in: RequestId -> CORS -> RequestGuard,
+    # so the guard's 411/413/500 responses carry both CORS headers and X-Request-ID.
+    app.add_middleware(
+        RequestGuardMiddleware,
+        max_body_bytes=settings.max_samples_per_batch * MAX_BYTES_PER_SAMPLE + MAX_ENVELOPE_BYTES,
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

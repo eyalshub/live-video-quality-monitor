@@ -135,7 +135,7 @@ describe('SessionDetails', () => {
   it('shows the summary and the full-session chart', async () => {
     const detail: SessionDetail = {
       ...session(),
-      summary: { duration_s: 1, avg_fps: 29.6, face_pct: 50, good_pct: 50, sample_count: 2 },
+      summary: { duration_s: 2, avg_fps: 29.6, face_pct: 50, good_pct: 50, sample_count: 2 },
       samples: [
         { t: 0, fps: 29.6, brightness: 130, motion: 2, face: true, verdict: 'good', reason: null },
         {
@@ -153,7 +153,7 @@ describe('SessionDetails', () => {
     render(<SessionDetails config={CONFIG} id={id} />)
 
     const grid = await screen.findByLabelText('Summary')
-    expect(grid.textContent).toContain('Duration1 s')
+    expect(grid.textContent).toContain('Duration2 s')
     expect(grid.textContent).toContain('Average FPS29.6')
     expect(grid.textContent).toContain('Face50.0 %')
     expect(grid.textContent).toContain('Good50.0 %')

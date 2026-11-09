@@ -50,7 +50,7 @@ def test_stop_saves_final_samples_and_returns_summary(client: TestClient) -> Non
     body = response.json()
     assert body["ingest"] == {"inserted": 1, "duplicates": 1, "ignored_after_stop": 0}
     assert body["session"]["summary"]["sample_count"] == 3
-    assert body["session"]["summary"]["duration_s"] == 2
+    assert body["session"]["summary"]["duration_s"] == 3
 
 
 def test_stop_twice_keeps_the_first_ended_at(client: TestClient) -> None:
@@ -118,7 +118,7 @@ def test_summary_is_computed_from_samples(client: TestClient) -> None:
         ],
     )
     assert _detail(client, session_id)["summary"] == {
-        "duration_s": 3,
+        "duration_s": 4,
         "avg_fps": 22.5,
         "face_pct": 75.0,
         "good_pct": 50.0,
@@ -140,7 +140,7 @@ def test_duration_is_last_t_even_with_gaps_and_without_stop(client: TestClient) 
     _post(client, session_id, [sample(0), sample(7), sample(3)])
     detail = _detail(client, session_id)
     assert detail["ended_at"] is None
-    assert detail["summary"]["duration_s"] == 7
+    assert detail["summary"]["duration_s"] == 8
     assert detail["summary"]["sample_count"] == 3
 
 
@@ -206,7 +206,7 @@ def test_list_is_newest_first_with_summaries(client: TestClient) -> None:
     assert sessions[0]["summary"]["sample_count"] == 0
     assert sessions[0]["summary"]["avg_fps"] is None
     assert sessions[1]["summary"] == {
-        "duration_s": 1,
+        "duration_s": 2,
         "avg_fps": 29.6,
         "face_pct": 50.0,
         "good_pct": 50.0,

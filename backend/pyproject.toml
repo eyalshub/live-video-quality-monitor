@@ -35,7 +35,7 @@ ignore = ["S101"]  # assert is fine (tests, type narrowing)
 [tool.mypy]
 strict = true
 python_version = "3.12"
-files = ["app", "tests", "migrations"]
+files = ["app", "tests", "migrations", "tools"]
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]

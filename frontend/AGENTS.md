@@ -13,11 +13,11 @@ backend.
 | `src/config.ts`       | `parseConfig(env)` / `getConfig()`: validates every `VITE_*` variable; no defaults                                                                        |
 | `src/api/client.ts`   | fetch wrapper (timeout from config, cancellable)                                                                                                          |
 | `src/api/schema.d.ts` | **Generated** by `npm run gen:api` from the backend OpenAPI. Never edit by hand                                                                           |
-| `src/metrics/`        | Pure functions: luma, motion, round1, verdict (tested on shared cases)                                                                                    |
+| `src/metrics/`        | Pure functions: luma, motion, round1, verdict (tested on shared cases); face filters + eval (ADR-015)                                                     |
 | `src/capture/`        | Camera, frame loop (rVFC / rAF), canvas analyzer, MediaPipe face detector                                                                                 |
-| `src/session/`        | Per-second aggregator, outbox, `MonitorController` (Start/Stop/pagehide)                                                                                  |
+| `src/session/`        | Per-second aggregator, outbox, `MonitorController` (Start/Stop/pagehide), face log (ADR-015)                                                              |
 | `src/ui/`             | React UI: `LiveMonitor`, `LiveStatus` (verdict + metric cards), `QualityChart`, `History` (list + details), `router.ts` / `Link.tsx` (History API routes) |
-| `scripts/`            | `gen-api.ts` (API types), `copy-mediapipe.ts` (wasm into public/, pre dev/build)                                                                          |
+| `scripts/`            | `gen-api.ts` (API types), `copy-mediapipe.ts` (wasm into public/, pre dev/build), `face-eval.ts` (ADR-015)                                                |
 | `public/models/`      | BlazeFace short-range model, served by the app (ADR-011)                                                                                                  |
 
 ## Commands (run inside `frontend/`)

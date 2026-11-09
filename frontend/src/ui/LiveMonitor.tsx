@@ -1,6 +1,10 @@
 import { useRef } from 'react'
 
 import type { AppConfig } from '../config'
+import { FACE_DEBUG as DEBUG } from '../session/faceLog'
+import { FaceDebugOverlay } from './FaceDebugOverlay'
+import { FaceLogPanel } from './FaceLogPanel'
+import { formatSeconds } from './chartLayout'
 import { QualityChart } from './QualityChart'
 import { InsightsPanel } from './InsightsPanel'
 import { MetricCards, VerdictBanner } from './LiveStatus'
@@ -34,12 +38,25 @@ export function LiveMonitor({ config }: { config: AppConfig }) {
       <div className="monitor__top">
         <div className="monitor__video">
           <video ref={videoRef} muted playsInline className={isLive ? '' : 'video--idle'} />
+          {DEBUG && isLive && (
+            <FaceDebugOverlay controller={controller} minScore={config.faceMinConfidence} />
+          )}
           {!isLive && <p className="video__placeholder">Camera off</p>}
+          {isLive && (
+            <span className="video__live" aria-hidden="true">
+              LIVE
+            </span>
+          )}
         </div>
 
         <div className="monitor__side">
           <div className="controls">
-            <button type="button" onClick={onStart} disabled={!canStart}>
+            <button
+              type="button"
+              className="button--primary"
+              onClick={onStart}
+              disabled={!canStart}
+            >
               Start
             </button>
             <button
@@ -51,6 +68,7 @@ export function LiveMonitor({ config }: { config: AppConfig }) {
             </button>
           </div>
 
+          {DEBUG && <FaceLogPanel controller={controller} phase={phase} />}
           {detectorStatus === 'loading' && <p className="hint">Loading the face detector…</p>}
           {state.notice && <p className="notice">{state.notice}</p>}
           {state.error && (
@@ -93,7 +111,12 @@ export function LiveMonitor({ config }: { config: AppConfig }) {
                 <p>No data recorded for this session.</p>
               ) : (
                 <ul>
-                  <li>Duration: {String(state.summary.duration_s)} s</li>
+                  <li>
+                    Duration:{' '}
+                    {state.summary.duration_s === null
+                      ? '—'
+                      : formatSeconds(state.summary.duration_s)}
+                  </li>
                   <li>Average FPS: {formatNumber(state.summary.avg_fps)}</li>
                   <li>Face: {formatNumber(state.summary.face_pct)} %</li>
                   <li>Good: {formatNumber(state.summary.good_pct)} %</li>

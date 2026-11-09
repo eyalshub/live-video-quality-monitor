@@ -14,6 +14,7 @@ import {
 } from '../api/client'
 import { describeCameraError, openCamera, stopStream } from '../capture/camera'
 import { type FaceDetectorHandle, loadFaceDetector } from '../capture/faceDetector'
+import type { FaceCandidate } from '../metrics/faceFilter'
 import { FrameAnalyzer } from '../capture/frameAnalyzer'
 import { startFrameLoop } from '../capture/frameLoop'
 import type { AppConfig } from '../config'
@@ -21,7 +22,15 @@ import type { Sample, Thresholds } from '../metrics/verdict'
 import { type Framing, type InsightSample, measureFraming } from '../metrics/insights'
 import { SecondAggregator } from './aggregator'
 import { InsightAggregator } from './insightAggregator'
+import { type FaceLog, type FaceScenario, newFaceLog } from './faceLog'
 import { Outbox, type SendOutcome } from './outbox'
+
+export type FaceFrameListener = (
+  t: number,
+  candidates: FaceCandidate[],
+  width: number,
+  height: number,
+) => void
 
 export type Phase = 'ready' | 'starting' | 'running' | 'stopping' | 'stopped'
 export type DetectorStatus = 'loading' | 'ready' | 'failed'
@@ -99,6 +108,10 @@ export class MonitorController {
   private startMs = 0
   private lastFrameAt = 0
   private finalChunks: Sample[][] = []
+  /** Debug only (ADR-015): when a scenario is chosen, the next session logs every detection. */
+  private faceLogScenario: FaceScenario | null = null
+  private faceLog: FaceLog | null = null
+  private faceFrameListener: FaceFrameListener | null = null
 
   constructor(config: AppConfig) {
     this.config = config
@@ -194,10 +207,25 @@ export class MonitorController {
       this.set({ phase: 'ready', notice: null, error: describeApiError(error, 'start a session') })
       return
     }
-    if (this.stream !== stream) return // stopped / unmounted while waiting
+    if (this.stream !== stream) {
+      // Left the live screen while the session was being created: end it now, so it is not left
+      // open. It has no samples, like a Start + Stop within the first second.
+      stopSession(this.config, created.id, []).catch((error: unknown) => {
+        console.warn('Could not end the session created while leaving', error)
+      })
+      return
+    }
 
     this.analyzer = new FrameAnalyzer(this.config.analysisWidth, this.config.analysisHeight)
     this.startMs = performance.now() // t = 0
+    this.faceLog = this.faceLogScenario
+      ? newFaceLog(
+          this.faceLogScenario,
+          video.videoWidth,
+          video.videoHeight,
+          this.config.faceMinConfidence,
+        )
+      : null
     this.aggregator = new SecondAggregator(this.startMs, created.thresholds)
     this.insights = new InsightAggregator(this.startMs)
     this.outbox = new Outbox(created.max_samples_per_batch)
@@ -212,6 +240,22 @@ export class MonitorController {
       sessionId: created.id,
       thresholds: created.thresholds,
     })
+  }
+
+  // --- face log (debug, ADR-015) --------------------------------------------------------
+
+  setFaceLogScenario(scenario: FaceScenario | null): void {
+    this.faceLogScenario = scenario
+  }
+
+  /** Debug overlay: called on every frame the detector ran on. Not React state (30 per second). */
+  setFaceFrameListener(listener: FaceFrameListener | null): void {
+    this.faceFrameListener = listener
+  }
+
+  /** The log of the latest session, if one was recorded. */
+  getFaceLog(): FaceLog | null {
+    return this.faceLog
   }
 
   // --- per frame -------------------------------------------------------------------------
@@ -235,6 +279,9 @@ export class MonitorController {
       try {
         const result = detector.detect(video, nowMs)
         face = result.present
+        const t = nowMs - this.startMs
+        this.faceLog?.frames.push({ t, candidates: result.candidates })
+        this.faceFrameListener?.(t, result.candidates, video.videoWidth, video.videoHeight)
         framing = result.box
           ? measureFraming(result.box, video.videoWidth, video.videoHeight)
           : null

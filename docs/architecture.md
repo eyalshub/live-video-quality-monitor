@@ -18,7 +18,7 @@
                                    JSON over HTTPS  │  (numbers only — no video)
                                                     ▼
 ┌──────────────────── FastAPI backend (Render free tier) ──────────────────────────┐
-│ CORS (configured origins) → request-id/logging middleware → routers               │
+│ request-id/logging → CORS (configured origins) → body limit + 500 net → routers  │
 │ validation (Pydantic) → verdict consistency check vs. session thresholds (ADR-002)│
 │ INSERT ... ON CONFLICT (session_id, t) DO NOTHING      summary = SQL aggregate    │
 └───────────────────────────────────────────────────┬──────────────────────────────┘
@@ -44,7 +44,7 @@
 6. **Stop** — the camera closes; the remaining outbox (including in-flight samples) is sent inside
    `POST /sessions/{id}/stop`, which saves them and sets `ended_at` in one transaction (ADR-004).
 7. **Tab closed** — on `pagehide` the outbox is flushed with `fetch(..., {keepalive: true})`.
-   If that fails, the session simply stays open; its duration is the last stored `t`.
+   If that fails, the session simply stays open; its duration runs to the last stored `t`.
 
 ## Configuration
 - Backend: `backend/.env.example` (DB URL, CORS origins, thresholds, batch limit, log level).

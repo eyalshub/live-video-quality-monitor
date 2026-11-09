@@ -61,12 +61,18 @@ def lock_session(db: Session, session_id: uuid.UUID) -> MonitoringSession:
 
 
 def thresholds_of(session: MonitoringSession) -> Thresholds:
+    """The session's threshold snapshot, for the verdict rule."""
     return Thresholds(
         fps_min=session.fps_min,
         brightness_min=session.brightness_min,
         brightness_max=session.brightness_max,
         motion_max=session.motion_max,
     )
+
+
+def thresholds_out(session: MonitoringSession) -> ThresholdsOut:
+    """The session's threshold snapshot, for API responses (same fields, read from the row)."""
+    return ThresholdsOut.model_validate(session, from_attributes=True)
 
 
 def _check_verdicts(samples: Sequence[SampleIn], thresholds: Thresholds) -> None:
@@ -173,7 +179,8 @@ def stop_session(
 
 _SUMMARY_COLUMNS = (
     func.count(Sample.t).label("sample_count"),
-    func.max(Sample.t).label("duration_s"),
+    # t is a 0-based second index: samples t=0..59 cover 60 seconds.
+    (func.max(Sample.t) + 1).label("duration_s"),
     func.avg(Sample.fps).label("avg_fps"),
     func.avg(case((Sample.face, 100.0), else_=0.0)).label("face_pct"),
     func.avg(case((Sample.verdict == "good", 100.0), else_=0.0)).label("good_pct"),
@@ -207,12 +214,7 @@ def to_session_out(session: MonitoringSession, summary: Summary) -> SessionOut:
         id=session.id,
         started_at=session.started_at,
         ended_at=session.ended_at,
-        thresholds=ThresholdsOut(
-            fps_min=session.fps_min,
-            brightness_min=session.brightness_min,
-            brightness_max=session.brightness_max,
-            motion_max=session.motion_max,
-        ),
+        thresholds=thresholds_out(session),
         summary=summary,
     )
 

@@ -11,7 +11,25 @@ export function App({ config }: { config: AppConfig }) {
   return (
     <main className="app">
       <header className="app__header">
-        <h1>Live Video Quality Monitor</h1>
+        <div className="app__brand">
+          <span className="app__logo" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <circle cx="12" cy="12" r="3.5" fill="currentColor" />
+            </svg>
+          </span>
+          <div>
+            <h1>Live Video Quality Monitor</h1>
+            <p className="app__tagline">Real-time camera quality, analyzed in your browser</p>
+          </div>
+        </div>
         <HealthStatus config={config} />
       </header>
       <nav className="nav" aria-label="Main">

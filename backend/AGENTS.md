@@ -7,10 +7,11 @@ and computes session summaries. It never receives or stores video, only numbers.
 ## Folder map
 | Path | What |
 |---|---|
-| `app/main.py` | `create_app(settings)` factory: CORS, error handlers, request-id middleware, routers |
+| `app/main.py` | `create_app(settings)` factory: middleware (outside in: request id → CORS → guard), error handlers, routers |
 | `app/core/config.py` | `Settings` (pydantic-settings). All required except `LOG_LEVEL` |
 | `app/core/errors.py` | Uniform error body, `AppError(status, code, message, details)` |
-| `app/core/request_id.py` | `X-Request-ID`, one JSON log line per request, 500 safety net |
+| `app/core/request_id.py` | `X-Request-ID`, one JSON log line per request (outermost) |
+| `app/core/request_guard.py` | Body size limit (411/413) and 500 safety net, inside CORS so errors stay readable cross-origin |
 | `app/core/logging.py` | JSON log formatter |
 | `app/db/models.py` | `MonitoringSession`, `Sample` (schema documented in `docs/data-model.md`) |
 | `app/db/session.py` | Engine, session factory, `get_db` dependency |
@@ -19,6 +20,7 @@ and computes session summaries. It never receives or stores video, only numbers.
 | `app/services/` | `verdict.py` (the rule), `sessions.py` (lifecycle, ingest, summary) |
 | `migrations/` | Alembic. One migration per schema change; never edit an applied one |
 | `tests/` | pytest. DB tests run against `TEST_DATABASE_URL` |
+| `tools/calibrate.py` | Read-only threshold calibration report from labelled sessions (ADR-014) |
 
 ## Commands (run inside `backend/`)
 ```bash

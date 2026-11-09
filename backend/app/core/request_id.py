@@ -1,4 +1,4 @@
-"""ASGI middleware: request id, one structured log line per request, and the 500 safety net."""
+"""ASGI middleware: request id and one structured log line per request (outermost layer)."""
 
 import logging
 import re
@@ -7,7 +7,6 @@ import uuid
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from app.core.errors import error_response
 from app.core.request_context import reset_request_id, set_request_id
 
 REQUEST_ID_HEADER = "X-Request-ID"
@@ -39,12 +38,10 @@ class RequestIdMiddleware:
         token = set_request_id(request_id)
         started = time.perf_counter()
         status_code = 500
-        response_started = False
 
         async def send_with_request_id(message: Message) -> None:
-            nonlocal status_code, response_started
+            nonlocal status_code
             if message["type"] == "http.response.start":
-                response_started = True
                 status_code = message["status"]
                 headers = list(message.get("headers", []))
                 headers.append((_HEADER_KEY, request_id.encode("latin-1")))
@@ -52,19 +49,9 @@ class RequestIdMiddleware:
             await send(message)
 
         try:
+            # Unhandled errors become a 500 in RequestGuardMiddleware (inside CORS); this layer
+            # only stamps the id and logs. Anything escaping it is logged here with status 500.
             await self.app(scope, receive, send_with_request_id)
-        except Exception:
-            logger.exception("unhandled error")
-            if response_started:
-                raise
-            status_code = 500
-            response = error_response(
-                500,
-                "internal_error",
-                "Internal server error",
-                headers={REQUEST_ID_HEADER: request_id},
-            )
-            await response(scope, receive, send)
         finally:
             logger.info(
                 "request",

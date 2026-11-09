@@ -12,8 +12,10 @@
 | **P5** History (bonus) | Session list, details chart, summary, empty states | ✅ done (2026-11-08) |
 | **P6** Polish | README final, thresholds, edge-case choices, demo rehearsal | 🚧 README done (2026-11-08); demo rehearsal left |
 
-## Not yet built
-Camera, metrics, chart, outbox, history UI, deployment configs.
+## Requirements status (audit 2026-11-09, against `docs/requirements.md`)
+Every item is implemented. Open: demo rehearsal; the live URLs were not re-opened in this audit.
+Gaps that are tests, not features: no unit test for `session/monitor.ts` (Start/Stop, `pagehide`)
+or for the camera constraints in `openCamera`.
 
 ## Log
 - 2026-11-08 — P0 done. Postgres in Docker, backend skeleton (config, uniform errors, request-id +
@@ -35,6 +37,14 @@ Camera, metrics, chart, outbox, history UI, deployment configs.
 - 2026-11-08 — README final. Checks: backend 162 tests, frontend 188 tests, CI green.
 - 2026-11-08 — Face confidence change re-applied (`9c8b354`) after the 5 variables were added in
   Vercel; the deployed bundle contains all 11 `VITE_*` values. Frontend 193 tests, CI green.
+- 2026-11-09 — Calibration protocol (ADR-014) + `backend/tools/calibrate.py`: per-scenario p5/p50/p95,
+  miss / false-alarm rate per threshold, balanced-error best threshold, face-detector error rates.
+  Read-only, 7 new unit tests. Thresholds unchanged until labelled sessions are recorded.
+- 2026-11-09 — Face false positives (ADR-015): detector reports scored candidates (floor 0.1, live
+  decision unchanged), pure filters (score, geometry, size, temporal), `?debug` face-log download,
+  `npm run face:eval` (ROC AUC, threshold sweep in seconds, filter comparison per scenario).
+- 2026-11-09 — Known edge case: Stop / unmount while `POST /sessions` is in flight leaves an empty,
+  open session (`monitor.ts`, the `this.stream !== stream` return after `createSession`).
 
 ## Known notes
 - Windows Application Control may block `.venv/Scripts/*.exe` shims → use `uv run python -m <tool>`.
@@ -51,5 +61,9 @@ Camera, metrics, chart, outbox, history UI, deployment configs.
 - Extra-insight limits (50 / 5 / 20 / 20) are first guesses; calibrate them on a real camera.
 
 ## Next step
-1. Calibrate the extra-insight limits on a real camera (raw values are shown in the panel).
-2. Demo rehearsal on the public URL (wake the backend first).
+1. Record the five labelled scenarios (ADR-014), run `tools/calibrate.py`, paste its tables into a new
+   ADR and the README; change thresholds only if the table supports it.
+2. Record face logs (`?debug`, several short logs per scenario incl. `hand`), run
+   `npm run face:eval`, and wire in only what the report supports (new ADR + `VITE_*` + Vercel).
+3. Calibrate the extra-insight limits on a real camera (raw values are shown in the panel).
+4. Demo rehearsal on the public URL (wake the backend first).

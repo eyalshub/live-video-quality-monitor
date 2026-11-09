@@ -33,7 +33,7 @@ Phase = where the behavior is implemented. Every case has (or will have) a test 
 |---|---|---|
 | Stop called twice | 200 with the same `ended_at` (ADR-004). | P1 |
 | Samples arriving after Stop | Always 200, nothing written. Already stored `(session_id, t)` → counted as `duplicates`; new `t` → counted as `ignored_after_stop` (ADR-010). The client puts its whole outbox into the Stop request, so no real sample is lost. | P1/P3 |
-| Tab closed without Stop | `pagehide` → `fetch` with `keepalive` flushes the outbox. Session stays open (`ended_at = null`); duration = last stored `t`. | P3 |
+| Tab closed without Stop | `pagehide` → `fetch` with `keepalive` flushes the outbox. Session stays open (`ended_at = null`); duration runs to the last stored `t` (`max(t) + 1`). | P3 |
 | Resent sample (retry) | `ON CONFLICT DO NOTHING`, first write wins, reported as duplicate. | P0 schema / P1 API |
 | Same `t` twice in one batch | First one wins. | P1 |
 | Batch larger than `MAX_SAMPLES_PER_BATCH` | Server: 422 `batch_too_large`. Client splits the outbox into chunks so it never hits this. | P1/P3 |

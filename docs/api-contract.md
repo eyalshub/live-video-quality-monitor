@@ -22,6 +22,8 @@ for 404 and 422 in OpenAPI.
 | 422 | `batch_too_large` | More than `MAX_SAMPLES_PER_BATCH` samples; `details` = `{max, received}` |
 | 422 | `validation_error` | Missing fields, wrong types, out-of-range values; `details` = list of `{loc, msg, type}` |
 | 422 | `inconsistent_verdict` | verdict/reason do not match the values + the session's thresholds (ADR-002); `details` = list of `{t, expected, received}` |
+| 411 | `length_required` | Chunked body without `Content-Length` |
+| 413 | `payload_too_large` | Body larger than `MAX_SAMPLES_PER_BATCH` × 1 KiB + 1 KiB; rejected before parsing; `details` = `{max_bytes}` |
 | 500 | `internal_error` | Unexpected; no stack trace in the body |
 
 ## Endpoints
@@ -79,6 +81,6 @@ Session + `samples` ordered by `t` + `summary`.
 ```json
 { "duration_s": 42, "avg_fps": 28.7, "face_pct": 93.0, "good_pct": 81.0, "sample_count": 40 }
 ```
-Computed with SQL aggregates at read time: `duration_s = max(t)`, averages and percentages rounded to
+Computed with SQL aggregates at read time: `duration_s = max(t) + 1` (t is a 0-based second index), averages and percentages rounded to
 1 decimal. All fields except `sample_count` are `null` for a session with no samples. A session closed
-without Stop has `ended_at = null` and its duration is still the last `t`.
+without Stop has `ended_at = null` and its duration still runs to the last stored `t`.

@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from app.core.errors import AppError
 from app.core.request_id import REQUEST_ID_HEADER
+from tests.conftest import FRONTEND_ORIGIN
 
 
 class _Payload(BaseModel):
@@ -97,3 +98,34 @@ def test_unexpected_exception_is_500_without_internals(error_client: TestClient)
     _assert_error_shape(response.json(), "internal_error")
     assert "secret" not in response.text
     assert response.headers.get(REQUEST_ID_HEADER)
+
+
+def test_unexpected_exception_keeps_cors_headers(error_client: TestClient) -> None:
+    """A cross-origin 500 without CORS headers is unreadable for the browser."""
+    response = error_client.get("/_test/boom", headers={"Origin": FRONTEND_ORIGIN})
+    assert response.status_code == 500
+    assert response.headers["access-control-allow-origin"] == FRONTEND_ORIGIN
+
+
+def test_oversized_body_is_413_before_parsing(error_client: TestClient) -> None:
+    body = b'{"fps": 1, "face": true, "pad": "' + b"x" * 1_000_000 + b'"}'
+    response = error_client.post(
+        "/_test/validate",
+        content=body,
+        headers={"Content-Type": "application/json", "Origin": FRONTEND_ORIGIN},
+    )
+    assert response.status_code == 413
+    _assert_error_shape(response.json(), "payload_too_large")
+    assert response.headers["access-control-allow-origin"] == FRONTEND_ORIGIN
+    assert response.headers.get(REQUEST_ID_HEADER)
+
+
+def test_chunked_body_is_411(error_client: TestClient) -> None:
+    def chunks() -> Iterator[bytes]:
+        yield b'{"fps": 1, "face": true}'
+
+    response = error_client.post(
+        "/_test/validate", content=chunks(), headers={"Content-Type": "application/json"}
+    )
+    assert response.status_code == 411
+    _assert_error_shape(response.json(), "length_required")
