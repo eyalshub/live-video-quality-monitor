@@ -15,6 +15,16 @@ History screen replays any session. **Video never leaves the browser**: only num
 > **up to ~1 minute**; the page says the backend may be waking up and waits (120 s timeout; a wake-up of 66 s was measured).
 > Open the app (or `/health`) once before a demo.
 
+![Live screen: verdict, four metric cards and extra insights](docs/img/live.webp)
+
+![30 s chart: FPS, brightness and motion with their limits, then the Face and Verdict strips](docs/img/chart.png)
+
+**Reading the two strips under the chart** (one cell per second): **Face** is the detector's answer
+(green = a face was present that second, after the stability filter). **Verdict** is the final
+Good / Poor for that second and combines all four rules below, so it can be red while Face is
+green. In the screenshot the first second is red because FPS was still below 15 while the camera
+started.
+
 ## Run locally
 
 Prerequisites: Docker Desktop, [uv](https://docs.astral.sh/uv/), Node 24.
